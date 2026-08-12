@@ -1,0 +1,30 @@
+flowchart TB
+    subgraph SRC["src/"]
+        API["LeaveManagement.Api<br/><i>controller, DI, middleware</i>"]
+        INFRA["LeaveManagement.Infrastructure<br/><i>EF Core, JWT, Jobs</i>"]
+        APP["LeaveManagement.Application<br/><i>use case + port/interface</i>"]
+        DOM["LeaveManagement.Domain<br/><b>NOL dependency</b>"]
+    end
+
+    subgraph TESTS["tests/"]
+        TAPI["Api.Tests"]
+        TAPP["Application.Tests"]
+        TDOM["Domain.Tests"]
+    end
+
+    API --> APP
+    API --> INFRA
+    INFRA --> APP
+    APP --> DOM
+
+    TAPI -.-> API
+    TAPP -.-> APP
+    TDOM -.-> DOM
+
+    style DOM fill:#e6f4ea,stroke:#34a853,stroke-width:3px
+    style APP fill:#e8f0fe,stroke:#4285f4,stroke-width:2px
+    style INFRA fill:#fef7e0,stroke:#f9ab00
+    style API fill:#fce8e6,stroke:#ea4335
+    style TDOM fill:#f1f3f4,stroke:#9aa0a6
+    style TAPP fill:#f1f3f4,stroke:#9aa0a6
+    style TAPI fill:#f1f3f4,stroke:#9aa0a6
