@@ -1,8 +1,8 @@
 %% Structural ERD
 %% Defines tables, columns, and foreign-key relationships only.
-%% Some constraints, indexes, and persistence decisions are not final.
-%% Storage strategy for calculated balances is not final.
+%% Detailed indexes and ON DELETE behavior are finalized in W2-01.
 %% Date-overlap enforcement and performance indexes are not final.
+%% PostgreSQL xmin is a system column used as an optimistic concurrency token.
 
 erDiagram
   Employee {
@@ -30,8 +30,11 @@ erDiagram
     INT annual_quota "NOT NULL"
     INT carried_over "NOT NULL"
     DATE carry_over_expires_at "NOT NULL"
-    INT used "storage strategy not final"
-    INT reserved "storage strategy not final"
+    INT annual_used "NOT NULL"
+    INT annual_reserved "NOT NULL"
+    INT carry_over_used "NOT NULL"
+    INT carry_over_reserved "NOT NULL"
+    XID xmin "system column; concurrency token"
   }
 
   LeaveRequest {
@@ -40,11 +43,13 @@ erDiagram
     DATE start_date "NOT NULL"
     DATE end_date "NOT NULL"
     INT working_days "NOT NULL"
+    INT annual_allocated "NOT NULL"
+    INT carry_over_allocated "NOT NULL"
     INT type "NOT NULL"
     VARCHAR(500) reason "NOT NULL"
     INT status "NOT NULL"
-    VARCHAR(100) idempotency_key "NULL; composite UK with employee_id when set"
     TIMESTAMPTZ submitted_at "NOT NULL"
+    XID xmin "system column; concurrency token"
   }
 
   ApprovalDecision {
@@ -92,6 +97,20 @@ erDiagram
     TIMESTAMPTZ executed_at "NOT NULL"
   }
 
+  IdempotencyRecord {
+    UUID id PK "NOT NULL"
+    UUID employee_id FK "NOT NULL"
+    VARCHAR(100) operation "NOT NULL; composite UK"
+    VARCHAR(100) idempotency_key "NOT NULL; composite UK"
+    VARCHAR(64) request_hash "NOT NULL"
+    INT status "NOT NULL"
+    VARCHAR(100) result_entity_type "NULL"
+    VARCHAR(100) result_entity_id "NULL"
+    TIMESTAMPTZ created_at "NOT NULL"
+    TIMESTAMPTZ completed_at "NULL"
+    TIMESTAMPTZ expires_at "NOT NULL"
+  }
+
   %% Simplified ASP.NET Core Identity table; framework-managed columns are omitted.
   AspNetUsers {
     UUID id PK "NOT NULL"
@@ -105,6 +124,7 @@ erDiagram
     UUID id PK "NOT NULL"
     UUID application_user_id FK "NOT NULL"
     VARCHAR(100) jti UK "NOT NULL"
+    VARCHAR(64) token_hash UK "NOT NULL"
     TIMESTAMPTZ expires_at "NOT NULL"
     TIMESTAMPTZ revoked_at "NULL"
     TIMESTAMPTZ created_at "NOT NULL"
@@ -117,6 +137,7 @@ erDiagram
   Employee ||--o{ ApprovalDecision : "acts on"
   Employee o|--o{ ApprovalDecision : "is bypassed approver"
   Employee ||--o{ QuotaAdjustment : "performs"
+  Employee ||--o{ IdempotencyRecord : "owns command keys"
   Employee ||--o| AspNetUsers : "has login account"
   LeaveBalance ||--o{ QuotaAdjustment : "receives"
   LeaveRequest ||--o{ ApprovalDecision : "records"
