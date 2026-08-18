@@ -1,0 +1,289 @@
+classDiagram
+  direction LR
+
+  %% Aggregate roots
+  class Employee {
+    <<aggregate root>>
+    +EmployeeId Id
+    +string FullName
+    +Email Email
+    +DateOnly HireDate
+    +EmployeeId? ManagerId
+    +PositionId? PositionId
+    +DateTimeOffset? AdminGrantedAt
+    +SystemRole Role
+    +bool IsActive
+    +Create(fullName: string, email: Email, hireDate: DateOnly, managerId: EmployeeId?, positionId: PositionId?) Result~Employee~
+    +AssignManager(managerId: EmployeeId?) Result
+    +AssignPosition(positionId: PositionId?) Result
+    +GrantAdmin(by: EmployeeId, now: DateTimeOffset) Result
+    +RevokeAdmin(by: EmployeeId, now: DateTimeOffset) Result
+    +Deactivate(now: DateTimeOffset) Result
+    +Activate() Result
+  }
+
+  class LeaveBalance {
+    <<aggregate root>>
+    +LeaveBalanceId Id
+    +EmployeeId EmployeeId
+    +int Year
+    +LeaveDays AnnualQuota
+    +LeaveDays CarriedOver
+    +DateOnly CarryOverExpiresAt
+    +LeaveDays AnnualUsed
+    +LeaveDays AnnualReserved
+    +LeaveDays CarryOverUsed
+    +LeaveDays CarryOverReserved
+    +IReadOnlyList~QuotaAdjustment~ Adjustments
+    +Create(employeeId: EmployeeId, year: int, annualQuota: LeaveDays, carriedOver: LeaveDays, expiresAt: DateOnly) Result~LeaveBalance~
+    +Available(asOf: DateOnly) LeaveDays
+    +Reserve(days: LeaveDays, asOf: DateOnly) Result~LeaveAllocation~
+    +ReleaseReservation(allocation: LeaveAllocation, asOf: DateOnly) Result
+    +ConfirmUsage(allocation: LeaveAllocation) Result
+    +CancelUsage(allocation: LeaveAllocation, asOf: DateOnly) Result
+    +Adjust(days: int, reason: Reason, actorId: EmployeeId, now: DateTimeOffset) Result
+    +ExpireCarryOver(asOf: DateOnly) Result
+  }
+
+  class LeaveRequest {
+    <<aggregate root>>
+    +LeaveRequestId Id
+    +EmployeeId EmployeeId
+    +DateRange Period
+    +LeaveDays WorkingDays
+    +LeaveAllocation Allocation
+    +LeaveType Type
+    +Reason Reason
+    +LeaveStatus Status
+    +IReadOnlyList~ApprovalDecision~ Decisions
+    +DateTimeOffset SubmittedAt
+    +Create(employeeId: EmployeeId, period: DateRange, workingDays: LeaveDays, allocation: LeaveAllocation, type: LeaveType, reason: Reason, submittedAt: DateTimeOffset) Result~LeaveRequest~
+    +ApproveFirstStage(approverId: EmployeeId, now: DateTimeOffset) Result
+    +ApproveFinalStage(approverId: EmployeeId, now: DateTimeOffset) Result
+    +Override(actorId: EmployeeId, bypassedApproverId: EmployeeId?, reason: Reason, now: DateTimeOffset) Result
+    +Reject(actorId: EmployeeId, reason: Reason, now: DateTimeOffset) Result
+    +Cancel(actorId: EmployeeId, today: DateOnly, now: DateTimeOffset) Result
+  }
+
+  %% Reference aggregates
+  class Position {
+    <<reference aggregate>>
+    +PositionId Id
+    +string Name
+    +bool IsActive
+    +Create(name: string) Result~Position~
+    +Rename(name: string) Result
+    +Deactivate() Result
+  }
+
+  class Holiday {
+    <<reference aggregate>>
+    +Guid Id
+    +DateOnly Date
+    +string Name
+    +HolidaySource Source
+    +Create(date: DateOnly, name: string, source: HolidaySource) Result~Holiday~
+    +Rename(name: string) Result
+  }
+
+  %% Child entities
+
+  class ApprovalDecision {
+    <<entity>>
+    +Guid Id
+    +LeaveRequestId LeaveRequestId
+    +EmployeeId ActorId
+    +DecisionType Type
+    +ApprovalStage Stage
+    +Reason? Reason
+    +EmployeeId? BypassedApproverId
+    +DateTimeOffset DecidedAt
+    +Create(requestId: LeaveRequestId, actorId: EmployeeId, type: DecisionType, stage: ApprovalStage, reason: Reason?, bypassedApproverId: EmployeeId?, decidedAt: DateTimeOffset) Result~ApprovalDecision~
+  }
+
+  class QuotaAdjustment {
+    <<entity>>
+    +Guid Id
+    +LeaveBalanceId LeaveBalanceId
+    +int Days
+    +Reason Reason
+    +EmployeeId AdjustedBy
+    +DateTimeOffset AdjustedAt
+    +Create(balanceId: LeaveBalanceId, days: int, reason: Reason, adjustedBy: EmployeeId, adjustedAt: DateTimeOffset) Result~QuotaAdjustment~
+  }
+
+  %% Operational records
+  class AuditEntry {
+    <<operational record>>
+    +Guid Id
+    +string EntityType
+    +string EntityId
+    +string Action
+    +EmployeeId? ActorId
+    +string? ActorSnapshot
+    +string Payload
+    +DateTimeOffset OccurredAt
+    +Create(entityType: string, entityId: string, action: string, actorId: EmployeeId?, actorSnapshot: string?, payload: string, occurredAt: DateTimeOffset) Result~AuditEntry~
+  }
+
+  class JobExecutionMarker {
+    <<operational record>>
+    +Guid Id
+    +string JobName
+    +string PeriodKey
+    +DateTimeOffset ExecutedAt
+    +Create(jobName: string, periodKey: string, executedAt: DateTimeOffset) Result~JobExecutionMarker~
+  }
+
+  %% Value objects
+  class EmployeeId {
+    <<value object>>
+    +Guid Value
+    +New() EmployeeId
+  }
+
+  class LeaveRequestId {
+    <<value object>>
+    +Guid Value
+    +New() LeaveRequestId
+  }
+
+  class LeaveBalanceId {
+    <<value object>>
+    +Guid Value
+    +New() LeaveBalanceId
+  }
+
+  class PositionId {
+    <<value object>>
+    +Guid Value
+    +New() PositionId
+  }
+
+  class Email {
+    <<value object>>
+    +string Value
+    +Create(value: string) Result~Email~
+  }
+
+  class Reason {
+    <<value object>>
+    +string Value
+    +Create(value: string) Result~Reason~
+  }
+
+  class LeaveDays {
+    <<value object>>
+    +int Value
+    +LeaveDays Zero
+    +Create(value: int) Result~LeaveDays~
+    +Add(other: LeaveDays) LeaveDays
+    +Subtract(other: LeaveDays) Result~LeaveDays~
+  }
+
+  class DateRange {
+    <<value object>>
+    +DateOnly Start
+    +DateOnly End
+    +Create(start: DateOnly, end: DateOnly) Result~DateRange~
+    +OverlapsWith(other: DateRange) bool
+    +DurationInDays() int
+  }
+
+  class LeaveAllocation {
+    <<value object>>
+    +LeaveDays Annual
+    +LeaveDays CarryOver
+    +Total() LeaveDays
+    +Create(annual: LeaveDays, carryOver: LeaveDays) Result~LeaveAllocation~
+  }
+
+  %% Domain services
+  class LeaveCalculator {
+    <<domain service>>
+    +Calculate(period: DateRange, holidays: IReadOnlyCollection~DateOnly~) LeaveDays
+  }
+
+  class RoleResolver {
+    <<domain service>>
+    +Resolve(employee: Employee, activeSubordinateCount: int) SystemRole
+  }
+
+  %% Enumerations
+  class SystemRole {
+    <<enumeration>>
+    Employee = 0
+    SuperEmployee = 1
+    Administrator = 2
+  }
+
+  class LeaveStatus {
+    <<enumeration>>
+    Pending
+    PendingFinalApproval
+    Approved
+    Rejected
+    Cancelled
+  }
+
+  class LeaveType {
+    <<enumeration>>
+    AnnualLeave
+    SickLeave
+  }
+
+  class DecisionType {
+    <<enumeration>>
+    Approve
+    Reject
+    Override
+    Cancel
+  }
+
+  class ApprovalStage {
+    <<enumeration>>
+    First
+    Final
+  }
+
+  class HolidaySource {
+    <<enumeration>>
+    Manual
+    Imported
+  }
+
+  %% Aggregate composition and domain associations
+  Employee "0..1" --> "0..*" Employee : manages
+  Position "0..1" <-- "0..*" Employee : assigned position
+  Employee "1" <-- "0..*" LeaveBalance : owner
+  Employee "1" <-- "0..*" LeaveRequest : requester
+  LeaveBalance "1" *-- "0..*" QuotaAdjustment : adjustments
+  LeaveRequest "1" *-- "0..*" ApprovalDecision : decisions
+
+  %% Value-object ownership
+  Employee *-- EmployeeId : identity
+  Employee *-- Email
+  Employee --> PositionId : position reference
+  Position *-- PositionId : identity
+  LeaveBalance *-- LeaveBalanceId : identity
+  LeaveBalance *-- LeaveDays : quantities
+  LeaveBalance ..> LeaveAllocation : allocates and settles
+  LeaveRequest *-- LeaveRequestId : identity
+  LeaveRequest *-- DateRange : period
+  LeaveRequest *-- LeaveDays : working days
+  LeaveRequest *-- LeaveAllocation : frozen allocation
+  LeaveRequest *-- Reason
+
+  %% Service dependencies
+  LeaveCalculator ..> DateRange
+  LeaveCalculator ..> LeaveDays
+  RoleResolver ..> Employee
+  RoleResolver ..> SystemRole
+
+  %% Enumeration dependencies
+  Employee ..> SystemRole : uses
+  LeaveRequest ..> LeaveStatus : uses
+  LeaveRequest ..> LeaveType : uses
+  ApprovalDecision ..> DecisionType : uses
+  ApprovalDecision ..> ApprovalStage : uses
+  Holiday ..> HolidaySource : uses
