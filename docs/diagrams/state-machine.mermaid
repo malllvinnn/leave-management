@@ -1,0 +1,55 @@
+stateDiagram-v2
+    [*] --> Pending: pengajuan dibuat<br/>WorkingDays dan allocation dibekukan
+
+    Pending --> Approved: approver tahap pertama menyetujui<br/>(1-5 hari kerja)
+    Pending --> PendingFinalApproval: approver tahap pertama menyetujui<br/>(6-10 hari kerja)
+    Pending --> Rejected: approver tahap pertama menolak<br/>(alasan wajib)
+    Pending --> Approved: Administrator override menyetujui<br/>(alasan wajib)
+    Pending --> Rejected: Administrator override menolak<br/>(alasan wajib)
+    Pending --> Cancelled: pemohon membatalkan<br/>(sebelum tanggal mulai)
+
+    PendingFinalApproval --> Approved: approver tahap final menyetujui
+    PendingFinalApproval --> Rejected: approver tahap final menolak<br/>(alasan wajib)
+    PendingFinalApproval --> Approved: Administrator override menyetujui<br/>(alasan wajib)
+    PendingFinalApproval --> Rejected: Administrator override menolak<br/>(alasan wajib)
+    PendingFinalApproval --> Cancelled: pemohon membatalkan<br/>(sebelum tanggal mulai)
+
+    Approved --> Cancelled: pemohon membatalkan<br/>(sebelum tanggal mulai)
+    Approved --> [*]: tanggal mulai tercapai
+
+    Rejected --> [*]
+    Cancelled --> [*]
+
+    note right of Pending
+        Allocation annual/carry-over tersimpan
+        Saldo tetap Reserved sesuai sumbernya
+    end note
+
+    note right of PendingFinalApproval
+        Allocation tidak dihitung ulang
+        Saldo tetap Reserved sesuai sumbernya
+    end note
+
+    note right of Approved
+        Reserved dipindahkan ke Used
+        sesuai sumber allocation
+        Masih dapat dibatalkan sebelum mulai
+    end note
+
+    note left of Rejected
+        Status final
+        Reservation dilepas sesuai allocation
+        Carry-over kedaluwarsa tidak dihidupkan kembali
+    end note
+
+    note left of Cancelled
+        Status final
+        Pending: reservation dilepas
+        Approved: usage dibatalkan
+        semuanya mengikuti allocation dan expiry
+    end note
+
+    note left of Pending
+        Pemohon tidak boleh menyetujui dirinya sendiri
+        AnnualLeave dan SickLeave mengikuti alur status yang sama
+    end note

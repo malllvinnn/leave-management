@@ -1,0 +1,144 @@
+%% Structural ERD
+%% Defines tables, columns, and foreign-key relationships only.
+%% Detailed indexes and ON DELETE behavior are finalized in W2-01.
+%% Date-overlap enforcement and performance indexes are not final.
+%% PostgreSQL xmin is a system column used as an optimistic concurrency token.
+
+erDiagram
+  Employee {
+    UUID id PK "NOT NULL"
+    VARCHAR(200) full_name "NOT NULL"
+    VARCHAR(255) email UK "NOT NULL; case-insensitive"
+    DATE hire_date "NOT NULL"
+    UUID manager_id FK "NULL"
+    UUID position_id FK "NULL"
+    TIMESTAMPTZ admin_granted_at "NULL"
+    INT role "NOT NULL"
+    BOOLEAN is_active "NOT NULL"
+  }
+
+  Position {
+    UUID id PK "NOT NULL"
+    VARCHAR(150) name UK "NOT NULL; case-insensitive"
+    BOOLEAN is_active "NOT NULL"
+  }
+
+  LeaveBalance {
+    UUID id PK "NOT NULL"
+    UUID employee_id FK "NOT NULL"
+    INT year "NOT NULL; composite UK with employee_id"
+    INT annual_quota "NOT NULL"
+    INT carried_over "NOT NULL"
+    DATE carry_over_expires_at "NOT NULL"
+    INT annual_used "NOT NULL"
+    INT annual_reserved "NOT NULL"
+    INT carry_over_used "NOT NULL"
+    INT carry_over_reserved "NOT NULL"
+    XID xmin "system column; concurrency token"
+  }
+
+  LeaveRequest {
+    UUID id PK "NOT NULL"
+    UUID employee_id FK "NOT NULL"
+    DATE start_date "NOT NULL"
+    DATE end_date "NOT NULL"
+    INT working_days "NOT NULL"
+    INT annual_allocated "NOT NULL"
+    INT carry_over_allocated "NOT NULL"
+    INT type "NOT NULL"
+    VARCHAR(500) reason "NOT NULL"
+    INT status "NOT NULL"
+    TIMESTAMPTZ submitted_at "NOT NULL"
+    XID xmin "system column; concurrency token"
+  }
+
+  ApprovalDecision {
+    UUID id PK "NOT NULL"
+    UUID leave_request_id FK "NOT NULL"
+    UUID actor_id FK "NOT NULL"
+    UUID bypassed_approver_id FK "NULL"
+    INT type "NOT NULL"
+    INT stage "NOT NULL"
+    VARCHAR(500) reason "conditional by decision type"
+    TIMESTAMPTZ decided_at "NOT NULL"
+  }
+
+  QuotaAdjustment {
+    UUID id PK "NOT NULL"
+    UUID leave_balance_id FK "NOT NULL"
+    UUID adjusted_by_id FK "NOT NULL"
+    INT days "NOT NULL"
+    VARCHAR(500) reason "NOT NULL"
+    TIMESTAMPTZ adjusted_at "NOT NULL"
+  }
+
+  Holiday {
+    UUID id PK "NOT NULL"
+    DATE date UK "NOT NULL"
+    VARCHAR(150) name "NOT NULL"
+    INT source "NOT NULL"
+  }
+
+  AuditEntry {
+    UUID id PK "NOT NULL"
+    VARCHAR(100) entity_type "NOT NULL"
+    VARCHAR(100) entity_id "NOT NULL"
+    VARCHAR(100) action "NOT NULL"
+    UUID actor_id "NULL; intentionally no FK"
+    VARCHAR(300) actor_snapshot "NULL"
+    JSONB payload "NOT NULL"
+    TIMESTAMPTZ occurred_at "NOT NULL"
+  }
+
+  JobExecutionMarker {
+    UUID id PK "NOT NULL"
+    VARCHAR(100) job_name "NOT NULL"
+    VARCHAR(50) period_key "NOT NULL; composite UK with job_name"
+    TIMESTAMPTZ executed_at "NOT NULL"
+  }
+
+  IdempotencyRecord {
+    UUID id PK "NOT NULL"
+    UUID employee_id FK "NOT NULL"
+    VARCHAR(100) operation "NOT NULL; composite UK"
+    VARCHAR(100) idempotency_key "NOT NULL; composite UK"
+    VARCHAR(64) request_hash "NOT NULL"
+    INT status "NOT NULL"
+    VARCHAR(100) result_entity_type "NULL"
+    VARCHAR(100) result_entity_id "NULL"
+    TIMESTAMPTZ created_at "NOT NULL"
+    TIMESTAMPTZ completed_at "NULL"
+    TIMESTAMPTZ expires_at "NOT NULL"
+  }
+
+  %% Simplified ASP.NET Core Identity table; framework-managed columns are omitted.
+  AspNetUsers {
+    UUID id PK "NOT NULL"
+    UUID employee_id FK,UK "NOT NULL"
+    VARCHAR(256) user_name "NOT NULL"
+    VARCHAR(256) email "NOT NULL"
+    TEXT password_hash "NOT NULL"
+  }
+
+  RefreshToken {
+    UUID id PK "NOT NULL"
+    UUID application_user_id FK "NOT NULL"
+    VARCHAR(100) jti UK "NOT NULL"
+    VARCHAR(64) token_hash UK "NOT NULL"
+    TIMESTAMPTZ expires_at "NOT NULL"
+    TIMESTAMPTZ revoked_at "NULL"
+    TIMESTAMPTZ created_at "NOT NULL"
+  }
+
+  Employee o|--o{ Employee : "manages"
+  Position o|--o{ Employee : "assigned to"
+  Employee ||--o{ LeaveBalance : "owns"
+  Employee ||--o{ LeaveRequest : "submits"
+  Employee ||--o{ ApprovalDecision : "acts on"
+  Employee o|--o{ ApprovalDecision : "is bypassed approver"
+  Employee ||--o{ QuotaAdjustment : "performs"
+  Employee ||--o{ IdempotencyRecord : "owns command keys"
+  Employee ||--o| AspNetUsers : "has login account"
+  LeaveBalance ||--o{ QuotaAdjustment : "receives"
+  LeaveRequest ||--o{ ApprovalDecision : "records"
+  AspNetUsers ||--o{ RefreshToken : "owns"
