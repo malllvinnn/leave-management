@@ -1,0 +1,43 @@
+stateDiagram-v2
+    [*] --> Pending: pengajuan dibuat
+
+    Pending --> Approved: approver tahap 1 menyetujui<br/>(1-5 hari kerja)
+    Pending --> PendingAdminApproval: approver tahap 1 menyetujui<br/>(6-10 hari kerja)
+    Pending --> Rejected: approver tahap 1 menolak<br/>(alasan wajib)
+    Pending --> Approved: Administrator override menyetujui<br/>(alasan wajib)
+    Pending --> Rejected: Administrator override menolak<br/>(alasan wajib)
+    Pending --> Cancelled: pemohon membatalkan<br/>(sebelum tanggal mulai)
+
+    PendingAdminApproval --> Approved: Administrator menyetujui
+    PendingAdminApproval --> Rejected: Administrator menolak<br/>(alasan wajib)
+    PendingAdminApproval --> Cancelled: pemohon membatalkan<br/>(sebelum tanggal mulai)
+
+    Approved --> Cancelled: pemohon membatalkan<br/>(sebelum tanggal mulai)
+    Approved --> [*]: tanggal mulai tercapai
+
+    Rejected --> [*]
+    Cancelled --> [*]
+
+    note right of Pending
+        Saldo ditahan (Reserved)
+    end note
+
+    note right of PendingAdminApproval
+        Saldo tetap ditahan (Reserved)
+    end note
+
+    note right of Approved
+        Saldo ditahan dilepas
+        Saldo terpakai bertambah
+    end note
+
+    note left of Rejected
+        Status final
+        Saldo ditahan dilepas
+    end note
+
+    note left of Cancelled
+        Status final
+        Saldo ditahan dilepas atau
+        saldo terpakai dikurangi
+    end note
