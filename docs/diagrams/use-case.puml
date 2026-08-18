@@ -1,4 +1,4 @@
-@startuml
+@startuml Use Case Diagram
 title Leave Management System - Use Case Diagram
 
 left to right direction
@@ -41,6 +41,7 @@ rectangle "Leave Management System" {
     usecase "Adjust Employee Leave Balance" as UC_AdjustBalance
     usecase "Manage Holidays" as UC_ManageHolidays
     usecase "Manage Positions" as UC_ManagePositions
+    usecase "Approve or Reject\nFinal-Stage Request" as UC_FinalDecision
     usecase "Override Approval Decision" as UC_OverrideDecision
   }
 }
@@ -63,6 +64,7 @@ Administrator --> UC_ResetPassword
 Administrator --> UC_AdjustBalance
 Administrator --> UC_ManageHolidays
 Administrator --> UC_ManagePositions
+Administrator --> UC_FinalDecision
 Administrator --> UC_OverrideDecision
 
 note right of UC_DecideRequest
@@ -74,6 +76,12 @@ end note
 note right of UC_OverrideDecision
   A reason is required.
   A requester may never override
+  their own request.
+end note
+
+note right of UC_FinalDecision
+  Applies to requests requiring final approval.
+  A requester may never decide
   their own request.
 end note
 
