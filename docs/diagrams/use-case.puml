@@ -1,0 +1,84 @@
+@startuml
+title Leave Management System - Use Case Diagram
+
+left to right direction
+
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+actor Employee as Employee
+actor SuperEmployee as SuperEmployee
+actor Administrator as Administrator
+
+SuperEmployee --|> Employee
+Administrator --|> SuperEmployee
+
+rectangle "Leave Management System" {
+  package "Account" {
+    usecase "Login" as UC_Login
+    usecase "Change Own Password" as UC_ChangePassword
+  }
+
+  package "Leave Self-Service" {
+    usecase "View Own Leave Balance" as UC_ViewOwnBalance
+    usecase "Submit Leave Request" as UC_SubmitRequest
+    usecase "View Own Leave Requests" as UC_ViewOwnRequests
+    usecase "Cancel Own Leave Request" as UC_CancelRequest
+  }
+
+  package "Team Approval" {
+    usecase "View Pending Requests\nfrom Direct Reports" as UC_ViewPending
+    usecase "Approve or Reject\nDirect Report Request" as UC_DecideRequest
+    usecase "View Team Leave Calendar" as UC_ViewTeamCalendar
+  }
+
+  package "Administration" {
+    usecase "View All Employees" as UC_ViewEmployees
+    usecase "View Any Employee Balance" as UC_ViewAnyBalance
+    usecase "Manage Employees" as UC_ManageEmployees
+    usecase "Reset Employee Password" as UC_ResetPassword
+    usecase "Adjust Employee Leave Balance" as UC_AdjustBalance
+    usecase "Manage Holidays" as UC_ManageHolidays
+    usecase "Manage Positions" as UC_ManagePositions
+    usecase "Override Approval Decision" as UC_OverrideDecision
+  }
+}
+
+Employee --> UC_Login
+Employee --> UC_ChangePassword
+Employee --> UC_ViewOwnBalance
+Employee --> UC_SubmitRequest
+Employee --> UC_ViewOwnRequests
+Employee --> UC_CancelRequest
+
+SuperEmployee --> UC_ViewPending
+SuperEmployee --> UC_DecideRequest
+SuperEmployee --> UC_ViewTeamCalendar
+
+Administrator --> UC_ViewEmployees
+Administrator --> UC_ViewAnyBalance
+Administrator --> UC_ManageEmployees
+Administrator --> UC_ResetPassword
+Administrator --> UC_AdjustBalance
+Administrator --> UC_ManageHolidays
+Administrator --> UC_ManagePositions
+Administrator --> UC_OverrideDecision
+
+note right of UC_DecideRequest
+  Only the direct manager may decide.
+  A requester may never decide
+  their own request.
+end note
+
+note right of UC_OverrideDecision
+  A reason is required.
+  A requester may never override
+  their own request.
+end note
+
+note bottom of Administrator
+  Permissions are cumulative through actor generalization.
+end note
+
+@enduml
