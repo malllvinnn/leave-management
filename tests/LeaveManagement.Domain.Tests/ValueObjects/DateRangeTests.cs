@@ -1,6 +1,6 @@
-using LeaveManagement.Domain.Common;
+using LeaveManagement.Domain.ValueObjects;
 
-namespace LeaveManagement.Domain.Tests.Common;
+namespace LeaveManagement.Domain.Tests.ValueObjects;
 
 [TestFixture]
 public class DateRangeTests

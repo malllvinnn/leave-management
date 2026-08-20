@@ -1,4 +1,6 @@
-namespace LeaveManagement.Domain.Common;
+using LeaveManagement.Domain.Common;
+
+namespace LeaveManagement.Domain.ValueObjects;
 
 public readonly record struct LeaveDays
 {
