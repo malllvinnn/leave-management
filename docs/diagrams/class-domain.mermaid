@@ -13,13 +13,14 @@ classDiagram
     +DateTimeOffset? AdminGrantedAt
     +SystemRole Role
     +bool IsActive
-    +Create(fullName: string, email: Email, hireDate: DateOnly, managerId: EmployeeId?, positionId: PositionId?) Result~Employee~
+    +Create(fullName: string?, email: Email?, hireDate: DateOnly, managerId: EmployeeId?, positionId: PositionId?) Result~Employee~
     +AssignManager(managerId: EmployeeId?) Result
     +AssignPosition(positionId: PositionId?) Result
-    +GrantAdmin(by: EmployeeId, now: DateTimeOffset) Result
-    +RevokeAdmin(by: EmployeeId, now: DateTimeOffset) Result
-    +Deactivate(now: DateTimeOffset) Result
+    +GrantAdmin(actorId: EmployeeId, grantedAt: DateTimeOffset) Result
+    +RevokeAdmin(actorId: EmployeeId) Result
+    +Deactivate() Result
     +Activate() Result
+    ~ApplyResolvedRole(role: SystemRole) void
   }
 
   class LeaveBalance {
@@ -140,24 +141,32 @@ classDiagram
     <<value object>>
     +Guid Value
     +New() EmployeeId
+    +Create(value: Guid) Result~EmployeeId~
+    +ToString() string
   }
 
   class LeaveRequestId {
     <<value object>>
     +Guid Value
     +New() LeaveRequestId
+    +Create(value: Guid) Result~LeaveRequestId~
+    +ToString() string
   }
 
   class LeaveBalanceId {
     <<value object>>
     +Guid Value
     +New() LeaveBalanceId
+    +Create(value: Guid) Result~LeaveBalanceId~
+    +ToString() string
   }
 
   class PositionId {
     <<value object>>
     +Guid Value
     +New() PositionId
+    +Create(value: Guid) Result~PositionId~
+    +ToString() string
   }
 
   class Email {
