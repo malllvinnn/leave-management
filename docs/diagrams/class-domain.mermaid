@@ -1,7 +1,7 @@
 classDiagram
   direction LR
 
-  %% Visibility: + public, - private, ~ internal
+  %% Visibility: + public, - private, ~ internal; classifier: $ static
   %% Constructor parameters are validated initial state, not injected services.
 
   %% Aggregate roots
@@ -17,7 +17,7 @@ classDiagram
     +SystemRole Role
     +bool IsActive
     -Employee(id: EmployeeId, fullName: string, email: Email, hireDate: DateOnly, managerId: EmployeeId?, positionId: PositionId?)
-    +Create(fullName: string?, email: Email?, hireDate: DateOnly, managerId: EmployeeId?, positionId: PositionId?) Result~Employee~
+    +Create(fullName: string?, email: Email?, hireDate: DateOnly, managerId: EmployeeId?, positionId: PositionId?) Result~Employee~$
     +AssignManager(managerId: EmployeeId?) Result
     +AssignPosition(positionId: PositionId?) Result
     +GrantAdmin(actorId: EmployeeId, grantedAt: DateTimeOffset) Result
@@ -41,7 +41,7 @@ classDiagram
     +LeaveDays CarryOverReserved
     +IReadOnlyList~QuotaAdjustment~ Adjustments
     -LeaveBalance(id: LeaveBalanceId, employeeId: EmployeeId, year: int, annualQuota: LeaveDays, carriedOver: LeaveDays, expiresAt: DateOnly)
-    +Create(employeeId: EmployeeId, year: int, annualQuota: LeaveDays, carriedOver: LeaveDays, expiresAt: DateOnly) Result~LeaveBalance~
+    +Create(employeeId: EmployeeId, year: int, annualQuota: LeaveDays, carriedOver: LeaveDays, expiresAt: DateOnly) Result~LeaveBalance~$
     +Available(asOf: DateOnly) LeaveDays
     +Reserve(days: LeaveDays, asOf: DateOnly) Result~LeaveAllocation~
     +ReleaseReservation(allocation: LeaveAllocation, asOf: DateOnly) Result
@@ -64,7 +64,7 @@ classDiagram
     +IReadOnlyList~ApprovalDecision~ Decisions
     +DateTimeOffset SubmittedAt
     -LeaveRequest(id: LeaveRequestId, employeeId: EmployeeId, period: DateRange, workingDays: LeaveDays, allocation: LeaveAllocation, type: LeaveType, reason: Reason, submittedAt: DateTimeOffset)
-    +Create(employeeId: EmployeeId, period: DateRange, workingDays: LeaveDays, allocation: LeaveAllocation, type: LeaveType, reason: Reason, submittedAt: DateTimeOffset) Result~LeaveRequest~
+    +Create(employeeId: EmployeeId, period: DateRange, workingDays: LeaveDays, allocation: LeaveAllocation, type: LeaveType, reason: Reason, submittedAt: DateTimeOffset) Result~LeaveRequest~$
     +ApproveFirstStage(approverId: EmployeeId, now: DateTimeOffset) Result
     +ApproveFinalStage(approverId: EmployeeId, now: DateTimeOffset) Result
     +Override(actorId: EmployeeId, bypassedApproverId: EmployeeId?, reason: Reason, now: DateTimeOffset) Result
@@ -79,7 +79,7 @@ classDiagram
     +string Name
     +bool IsActive
     -Position(id: PositionId, name: string)
-    +Create(name: string) Result~Position~
+    +Create(name: string) Result~Position~$
     +Rename(name: string) Result
     +Deactivate() Result
   }
@@ -91,7 +91,7 @@ classDiagram
     +string Name
     +HolidaySource Source
     -Holiday(id: Guid, date: DateOnly, name: string, source: HolidaySource)
-    +Create(date: DateOnly, name: string, source: HolidaySource) Result~Holiday~
+    +Create(date: DateOnly, name: string, source: HolidaySource) Result~Holiday~$
     +Rename(name: string) Result
   }
 
@@ -108,7 +108,7 @@ classDiagram
     +EmployeeId? BypassedApproverId
     +DateTimeOffset DecidedAt
     -ApprovalDecision(id: Guid, requestId: LeaveRequestId, actorId: EmployeeId, type: DecisionType, stage: ApprovalStage, reason: Reason?, bypassedApproverId: EmployeeId?, decidedAt: DateTimeOffset)
-    +Create(requestId: LeaveRequestId, actorId: EmployeeId, type: DecisionType, stage: ApprovalStage, reason: Reason?, bypassedApproverId: EmployeeId?, decidedAt: DateTimeOffset) Result~ApprovalDecision~
+    +Create(requestId: LeaveRequestId, actorId: EmployeeId, type: DecisionType, stage: ApprovalStage, reason: Reason?, bypassedApproverId: EmployeeId?, decidedAt: DateTimeOffset) Result~ApprovalDecision~$
   }
 
   class QuotaAdjustment {
@@ -120,7 +120,7 @@ classDiagram
     +EmployeeId AdjustedBy
     +DateTimeOffset AdjustedAt
     -QuotaAdjustment(id: Guid, balanceId: LeaveBalanceId, days: int, reason: Reason, adjustedBy: EmployeeId, adjustedAt: DateTimeOffset)
-    +Create(balanceId: LeaveBalanceId, days: int, reason: Reason, adjustedBy: EmployeeId, adjustedAt: DateTimeOffset) Result~QuotaAdjustment~
+    +Create(balanceId: LeaveBalanceId, days: int, reason: Reason, adjustedBy: EmployeeId, adjustedAt: DateTimeOffset) Result~QuotaAdjustment~$
   }
 
   %% Operational records
@@ -135,7 +135,7 @@ classDiagram
     +string Payload
     +DateTimeOffset OccurredAt
     -AuditEntry(id: Guid, entityType: string, entityId: string, action: string, actorId: EmployeeId?, actorSnapshot: string?, payload: string, occurredAt: DateTimeOffset)
-    +Create(entityType: string, entityId: string, action: string, actorId: EmployeeId?, actorSnapshot: string?, payload: string, occurredAt: DateTimeOffset) Result~AuditEntry~
+    +Create(entityType: string, entityId: string, action: string, actorId: EmployeeId?, actorSnapshot: string?, payload: string, occurredAt: DateTimeOffset) Result~AuditEntry~$
   }
 
   class JobExecutionMarker {
@@ -145,7 +145,7 @@ classDiagram
     +string PeriodKey
     +DateTimeOffset ExecutedAt
     -JobExecutionMarker(id: Guid, jobName: string, periodKey: string, executedAt: DateTimeOffset)
-    +Create(jobName: string, periodKey: string, executedAt: DateTimeOffset) Result~JobExecutionMarker~
+    +Create(jobName: string, periodKey: string, executedAt: DateTimeOffset) Result~JobExecutionMarker~$
   }
 
   %% Value objects
@@ -153,8 +153,8 @@ classDiagram
     <<value object>>
     +Guid Value
     -EmployeeId(value: Guid)
-    +New() EmployeeId
-    +Create(value: Guid) Result~EmployeeId~
+    +New() EmployeeId$
+    +Create(value: Guid) Result~EmployeeId~$
     +ToString() string
   }
 
@@ -162,8 +162,8 @@ classDiagram
     <<value object>>
     +Guid Value
     -LeaveRequestId(value: Guid)
-    +New() LeaveRequestId
-    +Create(value: Guid) Result~LeaveRequestId~
+    +New() LeaveRequestId$
+    +Create(value: Guid) Result~LeaveRequestId~$
     +ToString() string
   }
 
@@ -171,8 +171,8 @@ classDiagram
     <<value object>>
     +Guid Value
     -LeaveBalanceId(value: Guid)
-    +New() LeaveBalanceId
-    +Create(value: Guid) Result~LeaveBalanceId~
+    +New() LeaveBalanceId$
+    +Create(value: Guid) Result~LeaveBalanceId~$
     +ToString() string
   }
 
@@ -180,8 +180,8 @@ classDiagram
     <<value object>>
     +Guid Value
     -PositionId(value: Guid)
-    +New() PositionId
-    +Create(value: Guid) Result~PositionId~
+    +New() PositionId$
+    +Create(value: Guid) Result~PositionId~$
     +ToString() string
   }
 
@@ -189,22 +189,22 @@ classDiagram
     <<value object>>
     +string Value
     -Email(value: string)
-    +Create(value: string?) Result~Email~
+    +Create(value: string?) Result~Email~$
   }
 
   class Reason {
     <<value object>>
     +string Value
     -Reason(value: string)
-    +Create(value: string?) Result~Reason~
+    +Create(value: string?) Result~Reason~$
   }
 
   class LeaveDays {
     <<value object>>
     +int Value
-    +LeaveDays Zero
+    +LeaveDays Zero$
     -LeaveDays(value: int)
-    +Create(value: int) Result~LeaveDays~
+    +Create(value: int) Result~LeaveDays~$
     +Add(other: LeaveDays) LeaveDays
     +Subtract(other: LeaveDays) Result~LeaveDays~
   }
@@ -214,7 +214,7 @@ classDiagram
     +DateOnly Start
     +DateOnly End
     -DateRange(start: DateOnly, end: DateOnly)
-    +Create(start: DateOnly, end: DateOnly) Result~DateRange~
+    +Create(start: DateOnly, end: DateOnly) Result~DateRange~$
     +OverlapsWith(other: DateRange) bool
     +DurationInDays() int
   }
@@ -225,7 +225,7 @@ classDiagram
     +LeaveDays CarryOver
     -LeaveAllocation(annual: LeaveDays, carryOver: LeaveDays)
     +Total() LeaveDays
-    +Create(annual: LeaveDays, carryOver: LeaveDays) Result~LeaveAllocation~
+    +Create(annual: LeaveDays, carryOver: LeaveDays) Result~LeaveAllocation~$
   }
 
   %% Domain services
