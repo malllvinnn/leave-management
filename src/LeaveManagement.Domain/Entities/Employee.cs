@@ -47,12 +47,12 @@ public class Employee
         throw new NotImplementedException();
     }
 
-    public Result AssignManager(EmployeeId managerId)
+    public Result AssignManager(EmployeeId? managerId)
     {
         throw new NotImplementedException();
     }
 
-    public Result AssignPosition(EmployeeId positionId)
+    public Result AssignPosition(PositionId? positionId)
     {
         throw new NotImplementedException();
     }
