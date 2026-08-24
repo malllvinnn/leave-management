@@ -1,4 +1,3 @@
-using LeaveManagement.Domain.Common;
 using LeaveManagement.Domain.Entities;
 using LeaveManagement.Domain.Enums;
 using LeaveManagement.Domain.ValueObjects;
@@ -8,7 +7,7 @@ namespace LeaveManagement.Domain.Tests.Entities;
 [TestFixture]
 public class EmployeeTests
 {
-    private Result<Employee> _validEmployee;
+    private Employee _validEmployee = null!;
     private DateTimeOffset _initialGrantedAt;
 
     [SetUp]
@@ -20,7 +19,7 @@ public class EmployeeTests
             hireDate: new DateOnly(2026, 1, 1),
             managerId: EmployeeId.New(),
             positionId: PositionId.New()
-        );
+        ).Value;
 
         _initialGrantedAt = new DateTimeOffset(
             year: 2026,
@@ -257,7 +256,7 @@ public class EmployeeTests
     {
         // Arrange
         var newManagerId = EmployeeId.New();
-        var employee = _validEmployee.Value;
+        var employee = _validEmployee;
         var originalRole = employee.Role;
 
         // Act
@@ -311,7 +310,7 @@ public class EmployeeTests
     public void AssignManager_WithNullManagerId_ReturnsSuccessfulResultWithClearedManagerId()
     {
         // Arrange
-        var employee = _validEmployee.Value;
+        var employee = _validEmployee;
         var originalRole = employee.Role;
 
         // Act
@@ -334,7 +333,7 @@ public class EmployeeTests
     {
         // Arrange
         var newPositionId = PositionId.New();
-        var employee = _validEmployee.Value;
+        var employee = _validEmployee;
         var originalRole = employee.Role;
 
         // Act
@@ -356,7 +355,7 @@ public class EmployeeTests
     public void AssignPosition_WithNullPositionId_ReturnsSuccessfulResultWithClearedPositionId()
     {
         // Arrange
-        var employee = _validEmployee.Value;
+        var employee = _validEmployee;
         var originalRole = employee.Role;
 
         // Act
@@ -391,7 +390,7 @@ public class EmployeeTests
         );
 
         var expectedUtcGrantedAt = requestedGrantedAt.ToUniversalTime();
-        var employee = _validEmployee.Value;
+        var employee = _validEmployee;
         var originalRole = employee.Role;
 
         // Act
@@ -414,7 +413,7 @@ public class EmployeeTests
     public void GrantAdmin_WithOwnEmployeeId_ReturnsFailedResultWithoutChangingAdminGrantedAt()
     {
         // Arrange
-        var employee = _validEmployee.Value;
+        var employee = _validEmployee;
         var ownEmployeeId = employee.Id;
         var originalAdminGrantedAt = employee.AdminGrantedAt;
         var originalRole = employee.Role;
@@ -450,7 +449,7 @@ public class EmployeeTests
             offset: TimeSpan.FromHours(7)
         );
 
-        var employee = _validEmployee.Value;
+        var employee = _validEmployee;
 
         employee.GrantAdmin(actorId, _initialGrantedAt);
 
@@ -478,7 +477,7 @@ public class EmployeeTests
         // Arrange
         var grantingActorId = EmployeeId.New();
         var revokingActorId = EmployeeId.New();
-        var employee = _validEmployee.Value;
+        var employee = _validEmployee;
 
         employee.GrantAdmin(grantingActorId, _initialGrantedAt);
 
@@ -504,7 +503,7 @@ public class EmployeeTests
     {
         // Arrange
         var grantingActorId = EmployeeId.New();
-        var employee = _validEmployee.Value;
+        var employee = _validEmployee;
 
         employee.GrantAdmin(grantingActorId, _initialGrantedAt);
 
@@ -532,7 +531,7 @@ public class EmployeeTests
     {
         // Arrange
         var actorId = EmployeeId.New();
-        var employee = _validEmployee.Value;
+        var employee = _validEmployee;
         var originalRole = employee.Role;
 
         // Act
@@ -554,7 +553,7 @@ public class EmployeeTests
     public void Deactivate_WhenActive_ReturnsSuccessfulResultWithInactiveEmployee()
     {
         // Arrange
-        var employee = _validEmployee.Value;
+        var employee = _validEmployee;
         var originalRole = employee.Role;
 
         // Act
@@ -576,7 +575,7 @@ public class EmployeeTests
     public void Deactivate_WhenAlreadyInactive_ReturnsFailedResult()
     {
         // Arrange
-        var employee = _validEmployee.Value;
+        var employee = _validEmployee;
 
         employee.Deactivate();
 
@@ -601,7 +600,7 @@ public class EmployeeTests
     public void Activate_WhenInactive_ReturnsSuccessfulResultWithActiveEmployee()
     {
         // Arrange
-        var employee = _validEmployee.Value;
+        var employee = _validEmployee;
 
         employee.Deactivate();
 
@@ -626,7 +625,7 @@ public class EmployeeTests
     public void Activate_WhenAlreadyActive_ReturnsFailedResult()
     {
         // Arrange
-        var employee = _validEmployee.Value;
+        var employee = _validEmployee;
         var originalRole = employee.Role;
 
         // Act
