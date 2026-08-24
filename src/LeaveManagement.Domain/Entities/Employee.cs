@@ -196,7 +196,7 @@ public class Employee
         return successResult;
     }
 
-    void ApplyResolvedRole(SystemRole role)
+    internal void ApplyResolvedRole(SystemRole role)
     {
         throw new NotImplementedException();
     }
