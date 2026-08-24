@@ -690,7 +690,7 @@ public class EmployeeTests
         {
             Assert.That(result.IsSuccess, Is.False);
             Assert.That(result.IsFailure, Is.True);
-            Assert.That(result.Error, Is.EqualTo("Employee is already inactive."));
+            Assert.That(result.Error, Is.EqualTo("Employee is already inactive"));
 
             Assert.That(employee.IsActive, Is.False);
             Assert.That(employee.Role, Is.EqualTo(originalRole));
@@ -750,7 +750,7 @@ public class EmployeeTests
         {
             Assert.That(result.IsSuccess, Is.False);
             Assert.That(result.IsFailure, Is.True);
-            Assert.That(result.Error, Is.EqualTo("Employee is already active."));
+            Assert.That(result.Error, Is.EqualTo("Employee is already active"));
 
             Assert.That(employee.IsActive, Is.True);
             Assert.That(employee.Role, Is.EqualTo(originalRole));

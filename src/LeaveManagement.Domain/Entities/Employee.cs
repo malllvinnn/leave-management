@@ -60,7 +60,7 @@ public class Employee
             return failureResult;
         }
 
-        if (email == null)
+        if (email is null)
         {
             var failureResult = Result<Employee>.Fail("Employee email cannot be empty");
 
@@ -92,7 +92,7 @@ public class Employee
             return failureResult;
         }
 
-        if (managerId == null)
+        if (managerId is null)
         {
             ManagerId = null;
         }
@@ -106,7 +106,7 @@ public class Employee
 
     public Result AssignPosition(PositionId? positionId)
     {
-        if (positionId == null)
+        if (positionId is null)
         {
             PositionId = null;
         }
@@ -120,22 +120,80 @@ public class Employee
 
     public Result GrantAdmin(EmployeeId actorId, DateTimeOffset grantedAt)
     {
-        throw new NotImplementedException();
+        if (actorId == Id)
+        {
+            var failureResult = Result.Fail("Employee cannot grant administrator access to themselves");
+
+            return failureResult;
+        }
+
+        if (AdminGrantedAt is not null)
+        {
+            var failureResult = Result.Fail("Administrator access has already been granted to the employee");
+
+            return failureResult;
+        }
+
+        AdminGrantedAt = grantedAt.ToUniversalTime();
+
+        var successResult = Result.Ok();
+
+        return successResult;
     }
 
     public Result RevokeAdmin(EmployeeId actorId)
     {
-        throw new NotImplementedException();
+        if (actorId == Id)
+        {
+            var failureResult = Result.Fail("Employee cannot revoke their own administrator access");
+
+            return failureResult;
+        }
+
+        if (AdminGrantedAt is null)
+        {
+            var failureResult = Result.Fail("Administrator access has not been granted to the employee");
+
+            return failureResult;
+        }
+
+        AdminGrantedAt = null;
+
+        var successResult = Result.Ok();
+
+        return successResult;
     }
 
     public Result Deactivate()
     {
-        throw new NotImplementedException();
+        if (IsActive is false)
+        {
+            var failureResult = Result.Fail("Employee is already inactive");
+
+            return failureResult;
+        }
+
+        IsActive = false;
+
+        var successResult = Result.Ok();
+
+        return successResult;
     }
 
     public Result Activate()
     {
-        throw new NotImplementedException();
+        if (IsActive is true)
+        {
+            var failureResult = Result.Fail("Employee is already active");
+
+            return failureResult;
+        }
+
+        IsActive = true;
+
+        var successResult = Result.Ok();
+
+        return successResult;
     }
 
     void ApplyResolvedRole(SystemRole role)
