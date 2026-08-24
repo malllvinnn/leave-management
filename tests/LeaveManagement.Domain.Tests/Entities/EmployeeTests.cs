@@ -1,3 +1,4 @@
+using LeaveManagement.Domain.Common;
 using LeaveManagement.Domain.Entities;
 using LeaveManagement.Domain.Enums;
 using LeaveManagement.Domain.ValueObjects;
@@ -7,6 +8,31 @@ namespace LeaveManagement.Domain.Tests.Entities;
 [TestFixture]
 public class EmployeeTests
 {
+    private Result<Employee> _validEmployee;
+    private DateTimeOffset _initialGrantedAt;
+
+    [SetUp]
+    public void Setup()
+    {
+        _validEmployee = Employee.Create(
+            fullName: "John Doe",
+            email: Email.Create("johndoe@example.com").Value,
+            hireDate: new DateOnly(2026, 1, 1),
+            managerId: EmployeeId.New(),
+            positionId: PositionId.New()
+        );
+
+        _initialGrantedAt = new DateTimeOffset(
+            year: 2026,
+            month: 8,
+            day: 24,
+            hour: 10,
+            minute: 30,
+            second: 0,
+            offset: TimeSpan.FromHours(7)
+        );
+    }
+
     [Test]
     public void Create_WithValidValues_ReturnsSuccessfulResultWithInitialState()
     {
@@ -231,15 +257,7 @@ public class EmployeeTests
     {
         // Arrange
         var newManagerId = EmployeeId.New();
-
-        var employee = Employee.Create(
-            fullName: "John Doe",
-            email: Email.Create("johndoe@example.com").Value,
-            hireDate: new DateOnly(2026, 1, 1),
-            managerId: EmployeeId.New(),
-            positionId: PositionId.New()
-        ).Value;
-
+        var employee = _validEmployee.Value;
         var originalRole = employee.Role;
 
         // Act
@@ -293,14 +311,7 @@ public class EmployeeTests
     public void AssignManager_WithNullManagerId_ReturnsSuccessfulResultWithClearedManagerId()
     {
         // Arrange
-        var employee = Employee.Create(
-            fullName: "John Doe",
-            email: Email.Create("johndoe@example.com").Value,
-            hireDate: new DateOnly(2026, 1, 1),
-            managerId: EmployeeId.New(),
-            positionId: PositionId.New()
-        ).Value;
-
+        var employee = _validEmployee.Value;
         var originalRole = employee.Role;
 
         // Act
@@ -323,15 +334,7 @@ public class EmployeeTests
     {
         // Arrange
         var newPositionId = PositionId.New();
-
-        var employee = Employee.Create(
-            fullName: "John Doe",
-            email: Email.Create("johndoe@example.com").Value,
-            hireDate: new DateOnly(2026, 1, 1),
-            managerId: EmployeeId.New(),
-            positionId: PositionId.New()
-        ).Value;
-
+        var employee = _validEmployee.Value;
         var originalRole = employee.Role;
 
         // Act
@@ -353,14 +356,7 @@ public class EmployeeTests
     public void AssignPosition_WithNullPositionId_ReturnsSuccessfulResultWithClearedPositionId()
     {
         // Arrange
-        var employee = Employee.Create(
-            fullName: "John Doe",
-            email: Email.Create("johndoe@example.com").Value,
-            hireDate: new DateOnly(2026, 1, 1),
-            managerId: EmployeeId.New(),
-            positionId: PositionId.New()
-        ).Value;
-
+        var employee = _validEmployee.Value;
         var originalRole = employee.Role;
 
         // Act
@@ -395,15 +391,7 @@ public class EmployeeTests
         );
 
         var expectedUtcGrantedAt = requestedGrantedAt.ToUniversalTime();
-
-        var employee = Employee.Create(
-            fullName: "John Doe",
-            email: Email.Create("johndoe@example.com").Value,
-            hireDate: new DateOnly(2026, 1, 1),
-            managerId: EmployeeId.New(),
-            positionId: PositionId.New()
-        ).Value;
-
+        var employee = _validEmployee.Value;
         var originalRole = employee.Role;
 
         // Act
@@ -426,30 +414,13 @@ public class EmployeeTests
     public void GrantAdmin_WithOwnEmployeeId_ReturnsFailedResultWithoutChangingAdminGrantedAt()
     {
         // Arrange
-        var requestedGrantedAt = new DateTimeOffset(
-            year: 2026,
-            month: 8,
-            day: 24,
-            hour: 10,
-            minute: 30,
-            second: 0,
-            offset: TimeSpan.FromHours(7)
-        );
-
-        var employee = Employee.Create(
-            fullName: "John Doe",
-            email: Email.Create("johndoe@example.com").Value,
-            hireDate: new DateOnly(2026, 1, 1),
-            managerId: EmployeeId.New(),
-            positionId: PositionId.New()
-        ).Value;
-
+        var employee = _validEmployee.Value;
         var ownEmployeeId = employee.Id;
         var originalAdminGrantedAt = employee.AdminGrantedAt;
         var originalRole = employee.Role;
 
         // Act
-        var result = employee.GrantAdmin(ownEmployeeId, requestedGrantedAt);
+        var result = employee.GrantAdmin(ownEmployeeId, _initialGrantedAt);
 
         // Assert
         Assert.Multiple(() =>
@@ -469,16 +440,6 @@ public class EmployeeTests
         // Arrange
         var actorId = EmployeeId.New();
 
-        var initialGrantedAt = new DateTimeOffset(
-            year: 2026,
-            month: 8,
-            day: 24,
-            hour: 10,
-            minute: 30,
-            second: 0,
-            offset: TimeSpan.FromHours(7)
-        );
-
         var replacementGrantedAt = new DateTimeOffset(
             year: 2026,
             month: 11,
@@ -489,15 +450,9 @@ public class EmployeeTests
             offset: TimeSpan.FromHours(7)
         );
 
-        var employee = Employee.Create(
-            fullName: "John Doe",
-            email: Email.Create("johndoe@example.com").Value,
-            hireDate: new DateOnly(2026, 1, 1),
-            managerId: EmployeeId.New(),
-            positionId: PositionId.New()
-        ).Value;
+        var employee = _validEmployee.Value;
 
-        employee.GrantAdmin(actorId, initialGrantedAt);
+        employee.GrantAdmin(actorId, _initialGrantedAt);
 
         var originalAdminGrantedAt = employee.AdminGrantedAt;
         var originalRole = employee.Role;
@@ -523,26 +478,9 @@ public class EmployeeTests
         // Arrange
         var grantingActorId = EmployeeId.New();
         var revokingActorId = EmployeeId.New();
+        var employee = _validEmployee.Value;
 
-        var initialGrantedAt = new DateTimeOffset(
-            year: 2026,
-            month: 8,
-            day: 24,
-            hour: 10,
-            minute: 30,
-            second: 0,
-            offset: TimeSpan.FromHours(7)
-        );
-
-        var employee = Employee.Create(
-            fullName: "John Doe",
-            email: Email.Create("johndoe@example.com").Value,
-            hireDate: new DateOnly(2026, 1, 1),
-            managerId: EmployeeId.New(),
-            positionId: PositionId.New()
-        ).Value;
-
-        employee.GrantAdmin(grantingActorId, initialGrantedAt);
+        employee.GrantAdmin(grantingActorId, _initialGrantedAt);
 
         var originalRole = employee.Role;
 
@@ -566,26 +504,9 @@ public class EmployeeTests
     {
         // Arrange
         var grantingActorId = EmployeeId.New();
+        var employee = _validEmployee.Value;
 
-        var initialGrantedAt = new DateTimeOffset(
-            year: 2026,
-            month: 8,
-            day: 24,
-            hour: 10,
-            minute: 30,
-            second: 0,
-            offset: TimeSpan.FromHours(7)
-        );
-
-        var employee = Employee.Create(
-            fullName: "John Doe",
-            email: Email.Create("johndoe@example.com").Value,
-            hireDate: new DateOnly(2026, 1, 1),
-            managerId: EmployeeId.New(),
-            positionId: PositionId.New()
-        ).Value;
-
-        employee.GrantAdmin(grantingActorId, initialGrantedAt);
+        employee.GrantAdmin(grantingActorId, _initialGrantedAt);
 
         var ownEmployeeId = employee.Id;
         var originalAdminGrantedAt = employee.AdminGrantedAt;
@@ -611,15 +532,7 @@ public class EmployeeTests
     {
         // Arrange
         var actorId = EmployeeId.New();
-
-        var employee = Employee.Create(
-            fullName: "John Doe",
-            email: Email.Create("johndoe@example.com").Value,
-            hireDate: new DateOnly(2026, 1, 1),
-            managerId: EmployeeId.New(),
-            positionId: PositionId.New()
-        ).Value;
-
+        var employee = _validEmployee.Value;
         var originalRole = employee.Role;
 
         // Act
@@ -641,14 +554,7 @@ public class EmployeeTests
     public void Deactivate_WhenActive_ReturnsSuccessfulResultWithInactiveEmployee()
     {
         // Arrange
-        var employee = Employee.Create(
-            fullName: "John Doe",
-            email: Email.Create("johndoe@example.com").Value,
-            hireDate: new DateOnly(2026, 1, 1),
-            managerId: EmployeeId.New(),
-            positionId: PositionId.New()
-        ).Value;
-
+        var employee = _validEmployee.Value;
         var originalRole = employee.Role;
 
         // Act
@@ -670,13 +576,7 @@ public class EmployeeTests
     public void Deactivate_WhenAlreadyInactive_ReturnsFailedResult()
     {
         // Arrange
-        var employee = Employee.Create(
-            fullName: "John Doe",
-            email: Email.Create("johndoe@example.com").Value,
-            hireDate: new DateOnly(2026, 1, 1),
-            managerId: EmployeeId.New(),
-            positionId: PositionId.New()
-        ).Value;
+        var employee = _validEmployee.Value;
 
         employee.Deactivate();
 
@@ -701,13 +601,7 @@ public class EmployeeTests
     public void Activate_WhenInactive_ReturnsSuccessfulResultWithActiveEmployee()
     {
         // Arrange
-        var employee = Employee.Create(
-            fullName: "John Doe",
-            email: Email.Create("johndoe@example.com").Value,
-            hireDate: new DateOnly(2026, 1, 1),
-            managerId: EmployeeId.New(),
-            positionId: PositionId.New()
-        ).Value;
+        var employee = _validEmployee.Value;
 
         employee.Deactivate();
 
@@ -732,14 +626,7 @@ public class EmployeeTests
     public void Activate_WhenAlreadyActive_ReturnsFailedResult()
     {
         // Arrange
-        var employee = Employee.Create(
-            fullName: "John Doe",
-            email: Email.Create("johndoe@example.com").Value,
-            hireDate: new DateOnly(2026, 1, 1),
-            managerId: EmployeeId.New(),
-            positionId: PositionId.New()
-        ).Value;
-
+        var employee = _validEmployee.Value;
         var originalRole = employee.Role;
 
         // Act
