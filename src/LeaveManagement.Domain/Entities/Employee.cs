@@ -44,7 +44,43 @@ public class Employee
         PositionId? positionId
     )
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            var failureResult = Result<Employee>.Fail("Employee full name cannot be empty");
+
+            return failureResult;
+        }
+
+        var normalizedFullName = fullName.Trim();
+
+        if (normalizedFullName.Length > 200)
+        {
+            var failureResult = Result<Employee>.Fail("Employee full name cannot exceed 200 characters");
+
+            return failureResult;
+        }
+
+        if (email == null)
+        {
+            var failureResult = Result<Employee>.Fail("Employee email cannot be empty");
+
+            return failureResult;
+        }
+
+        var employeeId = EmployeeId.New();
+
+        var employee = new Employee(
+            id: employeeId,
+            fullName: normalizedFullName,
+            email: email,
+            hireDate: hireDate,
+            managerId: managerId,
+            positionId: positionId
+        );
+
+        var successResult = Result<Employee>.Ok(employee);
+
+        return successResult;
     }
 
     public Result AssignManager(EmployeeId? managerId)
