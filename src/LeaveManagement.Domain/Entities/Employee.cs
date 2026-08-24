@@ -85,12 +85,37 @@ public class Employee
 
     public Result AssignManager(EmployeeId? managerId)
     {
-        throw new NotImplementedException();
+        if (managerId == Id)
+        {
+            var failureResult = Result.Fail("Employee cannot be assigned as their own manager");
+
+            return failureResult;
+        }
+
+        if (managerId == null)
+        {
+            ManagerId = null;
+        }
+
+        ManagerId = managerId;
+
+        var successResult = Result.Ok();
+
+        return successResult;
     }
 
     public Result AssignPosition(PositionId? positionId)
     {
-        throw new NotImplementedException();
+        if (positionId == null)
+        {
+            PositionId = null;
+        }
+
+        PositionId = positionId;
+
+        var successResult = Result.Ok();
+
+        return successResult;
     }
 
     public Result GrantAdmin(EmployeeId actorId, DateTimeOffset grantedAt)
