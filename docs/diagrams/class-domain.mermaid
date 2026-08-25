@@ -40,14 +40,16 @@ classDiagram
     +LeaveDays CarryOverUsed
     +LeaveDays CarryOverReserved
     +IReadOnlyList~QuotaAdjustment~ Adjustments
-    -LeaveBalance(id: LeaveBalanceId, employeeId: EmployeeId, year: int, annualQuota: LeaveDays, carriedOver: LeaveDays, expiresAt: DateOnly)
-    +Create(employeeId: EmployeeId, year: int, annualQuota: LeaveDays, carriedOver: LeaveDays, expiresAt: DateOnly) Result~LeaveBalance~$
+    -LeaveBalance(id: LeaveBalanceId, employeeId: EmployeeId, year: int, annualQuota: LeaveDays, carriedOver: LeaveDays, carryOverExpiresAt: DateOnly)
+    +Create(employeeId: EmployeeId, year: int, annualQuota: LeaveDays, carriedOver: LeaveDays) Result~LeaveBalance~$
+    +CalculateProratedQuota(hireDate: DateOnly, year: int) Result~LeaveDays~$
+    +CalculateCarryOver(remaining: LeaveDays) LeaveDays$
     +Available(asOf: DateOnly) LeaveDays
     +Reserve(days: LeaveDays, asOf: DateOnly) Result~LeaveAllocation~
     +ReleaseReservation(allocation: LeaveAllocation, asOf: DateOnly) Result
     +ConfirmUsage(allocation: LeaveAllocation) Result
     +CancelUsage(allocation: LeaveAllocation, asOf: DateOnly) Result
-    +Adjust(days: int, reason: Reason, actorId: EmployeeId, now: DateTimeOffset) Result
+    +Adjust(days: int, reason: Reason?, actorId: EmployeeId, now: DateTimeOffset) Result
     +ExpireCarryOver(asOf: DateOnly) Result
   }
 
@@ -223,8 +225,8 @@ classDiagram
     <<value object>>
     +LeaveDays Annual
     +LeaveDays CarryOver
+    +LeaveDays Total
     -LeaveAllocation(annual: LeaveDays, carryOver: LeaveDays)
-    +Total() LeaveDays
     +Create(annual: LeaveDays, carryOver: LeaveDays) Result~LeaveAllocation~$
   }
 
@@ -298,6 +300,7 @@ classDiagram
   LeaveBalance *-- LeaveBalanceId : identity
   LeaveBalance *-- LeaveDays : quantities
   LeaveBalance ..> LeaveAllocation : allocates and settles
+  LeaveAllocation *-- LeaveDays : portions
   LeaveRequest *-- LeaveRequestId : identity
   LeaveRequest *-- DateRange : period
   LeaveRequest *-- LeaveDays : working days
