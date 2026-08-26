@@ -12,7 +12,11 @@ public sealed class RoleResolver
 
         SystemRole resolveResult;
 
-        if (activeSubordinateCount >= 1)
+        if (employee.AdminGrantedAt is not null)
+        {
+            resolveResult = SystemRole.Administrator;
+        }
+        else if (activeSubordinateCount >= 1)
         {
             resolveResult = SystemRole.SuperEmployee;
         }

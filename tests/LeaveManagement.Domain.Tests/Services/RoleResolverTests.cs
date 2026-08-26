@@ -126,4 +126,83 @@ public class RoleResolverTests
             Assert.That(employee.Role, Is.EqualTo(expectedRole));
         });
     }
+
+    [Test]
+    public void Resolve_WithAdminGrantAndNoActiveSubordinate_ReturnsAdministrator()
+    {
+        // Arrange
+        var employee = _employee;
+        int activeSubordinateCount = 0;
+
+        var grantedAt = new DateTimeOffset(
+            year: 2026,
+            month: 8,
+            day: 24,
+            hour: 10,
+            minute: 30,
+            second: 0,
+            offset: TimeSpan.FromHours(7)
+        );
+
+        var grantResult = employee.GrantAdmin(_actorId, grantedAt);
+
+        Assert.That(grantResult.IsSuccess, Is.True);
+
+        // Act
+        var result = _roleResolver.Resolve(
+            employee: employee,
+            activeSubordinateCount: activeSubordinateCount
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.EqualTo(SystemRole.Administrator));
+            Assert.That(employee.Role, Is.EqualTo(SystemRole.Administrator));
+        });
+    }
+
+    [Test]
+    public void Resolve_WithAdminGrantAndActiveSubordinates_ReturnsAdministrator()
+    {
+        // Arrange
+        var employee = _employee;
+        int activeSubordinateCount = 5;
+
+        var initialResolve = _roleResolver.Resolve(
+            employee: employee,
+            activeSubordinateCount: activeSubordinateCount
+        );
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(initialResolve, Is.EqualTo(SystemRole.SuperEmployee));
+            Assert.That(employee.Role, Is.EqualTo(SystemRole.SuperEmployee));
+        });
+
+        var grantedAt = new DateTimeOffset(
+            year: 2026,
+            month: 8,
+            day: 24,
+            hour: 10,
+            minute: 30,
+            second: 0,
+            offset: TimeSpan.FromHours(7)
+        );
+
+        employee.GrantAdmin(_actorId, grantedAt);
+
+        // Act
+        var resultResolve = _roleResolver.Resolve(
+            employee: employee,
+            activeSubordinateCount: activeSubordinateCount
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(resultResolve, Is.EqualTo(SystemRole.Administrator));
+            Assert.That(employee.Role, Is.EqualTo(SystemRole.Administrator));
+        });
+    }
 }
