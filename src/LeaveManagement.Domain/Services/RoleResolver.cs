@@ -10,6 +10,19 @@ public sealed class RoleResolver
         ArgumentNullException.ThrowIfNull(employee);
         ArgumentOutOfRangeException.ThrowIfNegative(activeSubordinateCount);
 
-        throw new NotImplementedException();
+        SystemRole resolveResult;
+
+        if (activeSubordinateCount >= 1)
+        {
+            resolveResult = SystemRole.SuperEmployee;
+        }
+        else
+        {
+            resolveResult = SystemRole.Employee;
+        }
+
+        employee.ApplyResolvedRole(resolveResult);
+
+        return resolveResult;
     }
 }

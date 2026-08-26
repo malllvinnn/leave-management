@@ -198,6 +198,6 @@ public class Employee
 
     internal void ApplyResolvedRole(SystemRole role)
     {
-        throw new NotImplementedException();
+        Role = role;
     }
 }

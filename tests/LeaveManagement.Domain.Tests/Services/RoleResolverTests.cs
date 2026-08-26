@@ -1,4 +1,5 @@
 using LeaveManagement.Domain.Entities;
+using LeaveManagement.Domain.Enums;
 using LeaveManagement.Domain.Services;
 using LeaveManagement.Domain.ValueObjects;
 
@@ -57,5 +58,72 @@ public class RoleResolverTests
 
         // Assert
         Assert.That(exception.ParamName, Is.EqualTo("activeSubordinateCount"));
+    }
+
+    [Test]
+    public void Resolve_WithoutAdminGrantAndNoActiveSubordinate_ReturnsEmployee()
+    {
+        // Arrange
+        var employee = _employee;
+        int activeSubordinateCount = 0;
+        var expectedRole = SystemRole.Employee;
+
+
+        // Act
+        var result = _roleResolver.Resolve(
+            employee: employee,
+            activeSubordinateCount: activeSubordinateCount
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.EqualTo(expectedRole));
+            Assert.That(employee.Role, Is.EqualTo(expectedRole));
+        });
+    }
+
+    [Test]
+    public void Resolve_WithoutAdminGrantAndOneActiveSubordinate_ReturnsSuperEmployee()
+    {
+        // Arrange
+        var employee = _employee;
+        int activeSubordinateCount = 1;
+        var expectedRole = SystemRole.SuperEmployee;
+
+        // Act
+        var result = _roleResolver.Resolve(
+            employee: employee,
+            activeSubordinateCount: activeSubordinateCount
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.EqualTo(expectedRole));
+            Assert.That(employee.Role, Is.EqualTo(expectedRole));
+        });
+    }
+
+    [Test]
+    public void Resolve_WithoutAdminGrantAndManyActiveSubordinates_ReturnsSuperEmployee()
+    {
+        // Arrange
+        var employee = _employee;
+        int activeSubordinateCount = 5;
+        var expectedRole = SystemRole.SuperEmployee;
+
+        // Act
+        var result = _roleResolver.Resolve(
+            employee: employee,
+            activeSubordinateCount: activeSubordinateCount
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.EqualTo(expectedRole));
+            Assert.That(employee.Role, Is.EqualTo(expectedRole));
+        });
     }
 }
