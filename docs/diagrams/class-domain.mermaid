@@ -40,6 +40,7 @@ classDiagram
     +LeaveDays CarryOverUsed
     +LeaveDays CarryOverReserved
     +IReadOnlyList~QuotaAdjustment~ Adjustments
+    -List~QuotaAdjustment~ _adjustments
     -LeaveBalance(id: LeaveBalanceId, employeeId: EmployeeId, year: int, annualQuota: LeaveDays, carriedOver: LeaveDays, carryOverExpiresAt: DateOnly)
     +Create(employeeId: EmployeeId, year: int, annualQuota: LeaveDays, carriedOver: LeaveDays) Result~LeaveBalance~$
     +CalculateProratedQuota(hireDate: DateOnly, year: int) Result~LeaveDays~$
