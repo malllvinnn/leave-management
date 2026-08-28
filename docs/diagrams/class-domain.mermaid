@@ -122,7 +122,7 @@ classDiagram
     +EmployeeId AdjustedBy
     +DateTimeOffset AdjustedAt
     -QuotaAdjustment(id: Guid, balanceId: LeaveBalanceId, days: int, reason: Reason, adjustedBy: EmployeeId, adjustedAt: DateTimeOffset)
-    +Create(balanceId: LeaveBalanceId, days: int, reason: Reason, adjustedBy: EmployeeId, adjustedAt: DateTimeOffset) Result~QuotaAdjustment~$
+    +Create(balanceId: LeaveBalanceId, days: int, reason: Reason?, adjustedBy: EmployeeId, adjustedAt: DateTimeOffset) Result~QuotaAdjustment~$
   }
 
   %% Operational records
