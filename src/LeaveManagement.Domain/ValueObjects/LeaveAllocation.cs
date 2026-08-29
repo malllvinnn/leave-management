@@ -22,6 +22,17 @@ public readonly record struct LeaveAllocation
 
     public static Result<LeaveAllocation> Create(LeaveDays annual, LeaveDays carryOver)
     {
-        throw new NotImplementedException();
+        var leaveAllocation = new LeaveAllocation(annual, carryOver);
+
+        if (leaveAllocation.Total == LeaveDays.Zero)
+        {
+            var failureResult = Result<LeaveAllocation>.Fail("Leave allocation must contain at least one day");
+
+            return failureResult;
+        }
+
+        var successResult = Result<LeaveAllocation>.Ok(leaveAllocation);
+
+        return successResult;
     }
 }
