@@ -55,7 +55,36 @@ public class LeaveBalance
         LeaveDays carriedOver
     )
     {
-        throw new NotImplementedException();
+        if (year is < 1 or > 9999)
+        {
+            throw new ArgumentOutOfRangeException(nameof(year));
+        }
+
+        if (carriedOver.Value > 6)
+        {
+            var failureResult = Result<LeaveBalance>.Fail("Carried over leave cannot exceed 6 days");
+
+            return failureResult;
+        }
+
+        var carryOverExpiresAt = new DateOnly(
+            year: year,
+            month: 3,
+            day: 31
+        );
+
+        var leaveBalance = new LeaveBalance(
+            id: LeaveBalanceId.New(),
+            employeeId: employeeId,
+            year: year,
+            annualQuota: annualQuota,
+            carriedOver: carriedOver,
+            carryOverExpiresAt: carryOverExpiresAt
+        );
+
+        var successResult = Result<LeaveBalance>.Ok(leaveBalance);
+
+        return successResult;
     }
 
     public static Result<LeaveDays> CalculateProratedQuota(DateOnly hireDate, int year)
