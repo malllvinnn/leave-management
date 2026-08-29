@@ -78,7 +78,7 @@ public class LeaveBalance
         throw new NotImplementedException();
     }
 
-    public Result Release(LeaveAllocation allocation, DateOnly asOf)
+    public Result ReleaseReservation(LeaveAllocation allocation, DateOnly asOf)
     {
         throw new NotImplementedException();
     }

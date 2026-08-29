@@ -20,7 +20,7 @@ public readonly record struct LeaveAllocation
         CarryOver = carryOver;
     }
 
-    public Result<LeaveAllocation> Create(LeaveDays annual, LeaveDays carryOver)
+    public static Result<LeaveAllocation> Create(LeaveDays annual, LeaveDays carryOver)
     {
         throw new NotImplementedException();
     }

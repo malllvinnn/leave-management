@@ -29,10 +29,10 @@ public class QuotaAdjustment
         AdjustedAt = adjustedAt;
     }
 
-    public Result<QuotaAdjustment> Create(
+    public static Result<QuotaAdjustment> Create(
         LeaveBalanceId leaveBalanceId,
         int days,
-        Reason reason,
+        Reason? reason,
         EmployeeId adjustedBy,
         DateTimeOffset adjustedAt
     )
