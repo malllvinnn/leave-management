@@ -37,6 +37,33 @@ public class QuotaAdjustment
         DateTimeOffset adjustedAt
     )
     {
-        throw new NotImplementedException();
+        if (days == 0)
+        {
+            var failureResult = Result<QuotaAdjustment>.Fail("Quota adjustment days cannot be zero");
+
+            return failureResult;
+        }
+
+        if (reason is null)
+        {
+            var failureResult = Result<QuotaAdjustment>.Fail("Quota adjustment reason cannot be empty");
+
+            return failureResult;
+        }
+
+        var normalizedAdjustedAt = adjustedAt.ToUniversalTime();
+
+        var quotaAdjustment = new QuotaAdjustment(
+            id: Guid.CreateVersion7(),
+            leaveBalanceId: leaveBalanceId,
+            days: days,
+            reason: reason,
+            adjustedBy: adjustedBy,
+            adjustedAt: normalizedAdjustedAt
+        );
+
+        var successResult = Result<QuotaAdjustment>.Ok(quotaAdjustment);
+
+        return successResult;
     }
 }
