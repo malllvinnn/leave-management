@@ -132,4 +132,238 @@ public class LeaveBalanceTests
             Assert.That(result.Value.CarryOverExpiresAt, Is.EqualTo(expectedCarryOverExpiresAt));
         });
     }
+
+    [Test]
+    public void CalculateProratedQuota_WithHireDateInJanuary_ReturnsSuccessfulResultWithTwelveDays()
+    {
+        // Arrange
+        var hireDate = new DateOnly(year: _year, month: 1, day: 1);
+        var expectedProratedQuota = LeaveDays.Create(12).Value;
+
+        // Act
+        var result = LeaveBalance.CalculateProratedQuota(
+            hireDate: hireDate,
+            year: _year
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(result.Value, Is.EqualTo(expectedProratedQuota));
+        });
+    }
+
+    [Test]
+    public void CalculateProratedQuota_WithHireDateOnTenthOfMarch_ReturnsSuccessfulResultWithTenDays()
+    {
+        // Arrange
+        var hireDate = new DateOnly(year: _year, month: 3, day: 10);
+        var expectedProratedQuota = LeaveDays.Create(10).Value;
+
+        // Act
+        var result = LeaveBalance.CalculateProratedQuota(
+            hireDate: hireDate,
+            year: _year
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(result.Value, Is.EqualTo(expectedProratedQuota));
+        });
+    }
+
+    [Test]
+    public void CalculateProratedQuota_WithHireDateOnFifteenthOfMarch_ReturnsSuccessfulResultWithTenDays()
+    {
+        // Arrange
+        var hireDate = new DateOnly(year: _year, month: 3, day: 15);
+        var expectedProratedQuota = LeaveDays.Create(10).Value;
+
+        // Act
+        var result = LeaveBalance.CalculateProratedQuota(
+            hireDate: hireDate,
+            year: _year
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(result.Value, Is.EqualTo(expectedProratedQuota));
+        });
+    }
+
+    [Test]
+    public void CalculateProratedQuota_WithHireDateOnTwentiethOfMarch_ReturnsSuccessfulResultWithNineDays()
+    {
+        // Arrange
+        var hireDate = new DateOnly(year: _year, month: 3, day: 20);
+        var expectedProratedQuota = LeaveDays.Create(9).Value;
+
+        // Act
+        var result = LeaveBalance.CalculateProratedQuota(
+            hireDate: hireDate,
+            year: _year
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(result.Value, Is.EqualTo(expectedProratedQuota));
+        });
+    }
+
+    [Test]
+    public void CalculateProratedQuota_WithHireDateInSeptember_ReturnsSuccessfulResultWithFourDays()
+    {
+        // Arrange
+        var hireDate = new DateOnly(year: _year, month: 9, day: 1);
+        var expectedProratedQuota = LeaveDays.Create(4).Value;
+
+        // Act
+        var result = LeaveBalance.CalculateProratedQuota(
+            hireDate: hireDate,
+            year: _year
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(result.Value, Is.EqualTo(expectedProratedQuota));
+        });
+    }
+
+    [Test]
+    public void CalculateProratedQuota_WithHireDateOnFifteenthOfDecember_ReturnsSuccessfulResultWithOneDay()
+    {
+        // Arrange
+        var hireDate = new DateOnly(year: _year, month: 12, day: 15);
+        var expectedProratedQuota = LeaveDays.Create(1).Value;
+
+        // Act
+        var result = LeaveBalance.CalculateProratedQuota(
+            hireDate: hireDate,
+            year: _year
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(result.Value, Is.EqualTo(expectedProratedQuota));
+        });
+    }
+
+    [Test]
+    public void CalculateProratedQuota_WithHireDateAfterFifteenthOfDecember_ReturnsSuccessfulResultWithZeroDays()
+    {
+        // Arrange
+        var hireDate = new DateOnly(year: _year, month: 12, day: 16);
+        var expectedProratedQuota = LeaveDays.Create(0).Value;
+
+        // Act
+        var result = LeaveBalance.CalculateProratedQuota(
+            hireDate: hireDate,
+            year: _year
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(result.Value, Is.EqualTo(expectedProratedQuota));
+        });
+    }
+
+    [Test]
+    public void CalculateProratedQuota_WithHireDateInPreviousYear_ReturnsSuccessfulResultWithTwelveDays()
+    {
+        // Arrange
+        var hireDate = new DateOnly(year: _year - 1, month: 12, day: 31);
+        var expectedProratedQuota = LeaveDays.Create(12).Value;
+
+        // Act
+        var result = LeaveBalance.CalculateProratedQuota(
+            hireDate: hireDate,
+            year: _year
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(result.Value, Is.EqualTo(expectedProratedQuota));
+        });
+    }
+
+    [Test]
+    public void CalculateProratedQuota_WithHireDateAfterBalanceYear_ReturnsFailedResultWithError()
+    {
+        // Arrange
+        var hireDate = new DateOnly(year: _year + 1, month: 1, day: 1);
+
+        // Act
+        var result = LeaveBalance.CalculateProratedQuota(
+            hireDate: hireDate,
+            year: _year
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Hire date cannot be later than the balance year"));
+        });
+    }
+
+    [TestCase(0)]
+    [TestCase(10000)]
+    public void CalculateProratedQuota_WithYearOutsideSupportedRange_ThrowsArgumentOutOfRangeExceptionWithYearParamName(int value)
+    {
+        // Arrange
+        var hireDate = new DateOnly(year: _year, month: 1, day: 1);
+        var year = value;
+
+        // Act
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() =>
+        {
+            LeaveBalance.CalculateProratedQuota(
+                hireDate: hireDate,
+                year: year
+            );
+        });
+
+        // Assert
+        Assert.That(exception.ParamName, Is.EqualTo("year"));
+    }
 }

@@ -89,7 +89,37 @@ public class LeaveBalance
 
     public static Result<LeaveDays> CalculateProratedQuota(DateOnly hireDate, int year)
     {
-        throw new NotImplementedException();
+        if (year is < 1 or > 9999)
+        {
+            throw new ArgumentOutOfRangeException(nameof(year));
+        }
+
+        if (hireDate.Year > year)
+        {
+            var failureResult = Result<LeaveDays>.Fail("Hire date cannot be later than the balance year");
+
+            return failureResult;
+        }
+
+        const int annualQuotaDays = 12;
+        const int monthsInYear = 12;
+        const int fullMonthCutoffDay = 15;
+
+        if (hireDate.Year < year)
+        {
+            var fullAnnualQuotaResult = LeaveDays.Create(annualQuotaDays);
+
+            return fullAnnualQuotaResult;
+        }
+
+        var remainingMonthsAfterHireMonth = monthsInYear - hireDate.Month;
+        var includesHireMonth = hireDate.Day <= fullMonthCutoffDay ? 1 : 0;
+        var remainingFullMonths = remainingMonthsAfterHireMonth + includesHireMonth;
+        var proratedQuotaValue = annualQuotaDays * remainingFullMonths / monthsInYear;
+
+        var proratedQuotaResult = LeaveDays.Create(proratedQuotaValue);
+
+        return proratedQuotaResult;
     }
 
     public static LeaveDays CalculateCarryOver(LeaveDays remaining)
