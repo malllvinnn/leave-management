@@ -124,7 +124,10 @@ public class LeaveBalance
 
     public static LeaveDays CalculateCarryOver(LeaveDays remaining)
     {
-        throw new NotImplementedException();
+        var carryOverValue = Math.Min(remaining.Value, 6);
+        var carryOverResult = LeaveDays.Create(carryOverValue).Value;
+
+        return carryOverResult;
     }
 
     public LeaveDays Available(DateOnly asOf)

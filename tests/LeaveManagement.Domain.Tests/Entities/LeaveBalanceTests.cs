@@ -366,4 +366,61 @@ public class LeaveBalanceTests
         // Assert
         Assert.That(exception.ParamName, Is.EqualTo("year"));
     }
+
+    [TestCase(8)]
+    [TestCase(12)]
+    public void CalculateCarryOver_WithRemainingAboveCap_ReturnsSixDays(int value)
+    {
+        // Arrange
+        var remainingDays = value;
+        var remaining = LeaveDays.Create(remainingDays).Value;
+        var expectedCarryOverSixDays = LeaveDays.Create(6).Value;
+
+        // Act
+        var result = LeaveBalance.CalculateCarryOver(remaining);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(expectedCarryOverSixDays));
+    }
+
+    [Test]
+    public void CalculateCarryOver_WithRemainingBelowCap_ReturnsRemainingDays()
+    {
+        // Arrange
+        var remainingBelowCap = LeaveDays.Create(4).Value;
+
+        // Act
+        var result = LeaveBalance.CalculateCarryOver(remainingBelowCap);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(remainingBelowCap));
+    }
+
+    [Test]
+    public void CalculateCarryOver_WithRemainingExactlyAtCap_ReturnsSixDays()
+    {
+        // Arrange
+        var remainingExactlyAtCap = LeaveDays.Create(6).Value;
+        var expectedCarryOverSixDays = LeaveDays.Create(6).Value;
+
+        // Act
+        var result = LeaveBalance.CalculateCarryOver(remainingExactlyAtCap);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(expectedCarryOverSixDays));
+    }
+
+    [Test]
+    public void CalculateCarryOver_WithZeroRemaining_ReturnsZeroDays()
+    {
+        // Arrange
+        var remainingZero = LeaveDays.Zero;
+        var expectedCarryOverZeroDays = LeaveDays.Zero;
+
+        // Act
+        var result = LeaveBalance.CalculateCarryOver(remainingZero);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(expectedCarryOverZeroDays));
+    }
 }
