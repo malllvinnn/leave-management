@@ -423,4 +423,76 @@ public class LeaveBalanceTests
         // Assert
         Assert.That(result, Is.EqualTo(expectedCarryOverZeroDays));
     }
+
+    [Test]
+    public void Available_BeforeCarryOverExpiry_ReturnsEighteenDays()
+    {
+        // Arrange
+        var annualQuota = LeaveDays.Create(12).Value;
+        var carriedOver = LeaveDays.Create(6).Value;
+        var expectedAvailableDays = LeaveDays.Create(18).Value;
+
+        var leaveBalance = LeaveBalance.Create(
+            employeeId: _employeeId,
+            year: _year,
+            annualQuota: annualQuota,
+            carriedOver: carriedOver
+        ).Value;
+
+        var asOfDateBeforeExpiry = leaveBalance.CarryOverExpiresAt.AddDays(-1);
+
+        // Act
+        var result = leaveBalance.Available(asOf: asOfDateBeforeExpiry);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(expectedAvailableDays));
+    }
+
+    [Test]
+    public void Available_OnCarryOverExpiryDate_ReturnsEighteenDays()
+    {
+        // Arrange
+        var annualQuota = LeaveDays.Create(12).Value;
+        var carriedOver = LeaveDays.Create(6).Value;
+        var expectedAvailableDays = LeaveDays.Create(18).Value;
+
+        var leaveBalance = LeaveBalance.Create(
+            employeeId: _employeeId,
+            year: _year,
+            annualQuota: annualQuota,
+            carriedOver: carriedOver
+        ).Value;
+
+        var asOfDateOnExpiry = leaveBalance.CarryOverExpiresAt;
+
+        // Act
+        var result = leaveBalance.Available(asOf: asOfDateOnExpiry);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(expectedAvailableDays));
+    }
+
+    [Test]
+    public void Available_AfterCarryOverExpiry_ReturnsTwelveDays()
+    {
+        // Arrange
+        var annualQuota = LeaveDays.Create(12).Value;
+        var carriedOver = LeaveDays.Create(6).Value;
+        var expectedAvailableDays = LeaveDays.Create(12).Value;
+
+        var leaveBalance = LeaveBalance.Create(
+            employeeId: _employeeId,
+            year: _year,
+            annualQuota: annualQuota,
+            carriedOver: carriedOver
+        ).Value;
+
+        var asOfDateAfterExpiry = leaveBalance.CarryOverExpiresAt.AddDays(1);
+
+        // Act
+        var result = leaveBalance.Available(asOf: asOfDateAfterExpiry);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(expectedAvailableDays));
+    }
 }

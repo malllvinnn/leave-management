@@ -132,7 +132,21 @@ public class LeaveBalance
 
     public LeaveDays Available(DateOnly asOf)
     {
-        throw new NotImplementedException();
+        var annualAvailable = AnnualQuota.Value - AnnualUsed.Value - AnnualReserved.Value;
+
+        if (asOf > CarryOverExpiresAt)
+        {
+            var availableResult = LeaveDays.Create(annualAvailable).Value;
+
+            return availableResult;
+        }
+
+        var carryOverAvailable = CarriedOver.Value - CarryOverUsed.Value - CarryOverReserved.Value;
+        var totalAvailable = annualAvailable + carryOverAvailable;
+
+        var totalAvailableResult = LeaveDays.Create(totalAvailable).Value;
+
+        return totalAvailableResult;
     }
 
     public Result<LeaveAllocation> Reserve(LeaveDays days, DateOnly asOf)
