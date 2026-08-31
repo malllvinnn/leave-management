@@ -219,6 +219,19 @@ public class LeaveBalance
 
     public Result ExpireCarryOver(DateOnly asOf)
     {
-        throw new NotImplementedException();
+        if (asOf <= CarryOverExpiresAt)
+        {
+            var unchangedResult = Result.Ok();
+
+            return unchangedResult;
+        }
+
+        var retainedCarryOver = CarryOverUsed.Add(CarryOverReserved);
+
+        CarriedOver = retainedCarryOver;
+
+        var successResult = Result.Ok();
+
+        return successResult;
     }
 }

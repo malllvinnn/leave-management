@@ -10,6 +10,7 @@ public class LeaveBalanceTests
     private int _year;
     private LeaveDays _annualQuota;
     private LeaveDays _carriedOver;
+    private LeaveBalance _leaveBalance;
 
     [SetUp]
     public void Setup()
@@ -18,6 +19,13 @@ public class LeaveBalanceTests
         _year = 2026;
         _annualQuota = LeaveDays.Create(12).Value;
         _carriedOver = LeaveDays.Create(4).Value;
+
+        _leaveBalance = LeaveBalance.Create(
+            employeeId: _employeeId,
+            year: _year,
+            annualQuota: _annualQuota,
+            carriedOver: _carriedOver
+        ).Value;
     }
 
     [Test]
@@ -501,14 +509,7 @@ public class LeaveBalanceTests
     {
         // Arrange
         var requestedDays = LeaveDays.Zero;
-
-        var leaveBalance = LeaveBalance.Create(
-            employeeId: _employeeId,
-            year: _year,
-            annualQuota: _annualQuota,
-            carriedOver: _carriedOver
-        ).Value;
-
+        var leaveBalance = _leaveBalance;
         var asOfDate = leaveBalance.CarryOverExpiresAt.AddDays(-1);
 
         // Act
@@ -531,14 +532,7 @@ public class LeaveBalanceTests
     {
         // Arrange
         var requestedDays = LeaveDays.Create(20).Value;
-
-        var leaveBalance = LeaveBalance.Create(
-            employeeId: _employeeId,
-            year: _year,
-            annualQuota: _annualQuota,
-            carriedOver: _carriedOver
-        ).Value;
-
+        var leaveBalance = _leaveBalance;
         var asOfDate = leaveBalance.CarryOverExpiresAt.AddDays(-1);
 
         var originalAnnualUsed = leaveBalance.AnnualUsed;
@@ -571,14 +565,7 @@ public class LeaveBalanceTests
     {
         // Arrange
         var requestedDays = LeaveDays.Create(4).Value;
-
-        var leaveBalance = LeaveBalance.Create(
-            employeeId: _employeeId,
-            year: _year,
-            annualQuota: _annualQuota,
-            carriedOver: _carriedOver
-        ).Value;
-
+        var leaveBalance = _leaveBalance;
         var asOfDate = leaveBalance.CarryOverExpiresAt.AddDays(-1);
 
         // Act
@@ -606,14 +593,7 @@ public class LeaveBalanceTests
         var requestedDays = LeaveDays.Create(8).Value;
         var expectedCarryOverAllocation = _carriedOver;
         var expectedAnnualAllocation = LeaveDays.Create(4).Value;
-
-        var leaveBalance = LeaveBalance.Create(
-            employeeId: _employeeId,
-            year: _year,
-            annualQuota: _annualQuota,
-            carriedOver: _carriedOver
-        ).Value;
-
+        var leaveBalance = _leaveBalance;
         var asOfDate = leaveBalance.CarryOverExpiresAt.AddDays(-1);
 
         // Act
@@ -642,14 +622,7 @@ public class LeaveBalanceTests
     {
         // Arrange
         var requestedDays = LeaveDays.Create(8).Value;
-
-        var leaveBalance = LeaveBalance.Create(
-            employeeId: _employeeId,
-            year: _year,
-            annualQuota: _annualQuota,
-            carriedOver: _carriedOver
-        ).Value;
-
+        var leaveBalance = _leaveBalance;
         var asOfDate = leaveBalance.CarryOverExpiresAt.AddDays(1);
 
         // Act
@@ -675,14 +648,7 @@ public class LeaveBalanceTests
     {
         // Arrange
         var requestedDays = LeaveDays.Create(8).Value;
-
-        var leaveBalance = LeaveBalance.Create(
-            employeeId: _employeeId,
-            year: _year,
-            annualQuota: _annualQuota,
-            carriedOver: _carriedOver
-        ).Value;
-
+        var leaveBalance = _leaveBalance;
         var asOfDate = leaveBalance.CarryOverExpiresAt.AddDays(-1);
 
         // Act
@@ -699,6 +665,129 @@ public class LeaveBalanceTests
             Assert.That(result.Error, Is.Empty);
 
             Assert.That(result.Value.Total, Is.EqualTo(requestedDays));
+        });
+    }
+
+    [Test]
+    public void ExpireCarryOver_BeforeExpiryDate_DoesNotChangeCarriedOver()
+    {
+        // Arrange
+        var leaveBalance = _leaveBalance;
+        var asOfDate = leaveBalance.CarryOverExpiresAt.AddDays(-1);
+        var originalCarriedOver = leaveBalance.CarriedOver;
+
+        // Act
+        var result = leaveBalance.ExpireCarryOver(asOf: asOfDate);
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(leaveBalance.CarriedOver, Is.EqualTo(originalCarriedOver));
+        });
+    }
+
+    [Test]
+    public void ExpireCarryOver_OnExpiryDate_DoesNotChangeCarriedOver()
+    {
+        // Arrange
+        var leaveBalance = _leaveBalance;
+        var asOfDate = leaveBalance.CarryOverExpiresAt;
+        var originalCarriedOver = leaveBalance.CarriedOver;
+
+        // Act
+        var result = leaveBalance.ExpireCarryOver(asOf: asOfDate);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(leaveBalance.CarriedOver, Is.EqualTo(originalCarriedOver));
+        });
+    }
+
+    [Test]
+    public void ExpireCarryOver_AfterExpiryWithUnusedCarryOver_ReducesCarriedOverToUsedPlusReserved()
+    {
+        // Arrange
+        var leaveBalance = _leaveBalance;
+        var asOfDate = leaveBalance.CarryOverExpiresAt.AddDays(1);
+        var expectedCarriedOver = leaveBalance.CarryOverUsed.Add(leaveBalance.CarryOverReserved);
+
+        // Act
+        var result = leaveBalance.ExpireCarryOver(asOf: asOfDate);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(leaveBalance.CarriedOver, Is.EqualTo(expectedCarriedOver));
+            Assert.That(leaveBalance.CarriedOver, Is.EqualTo(LeaveDays.Zero));
+        });
+    }
+
+    [Test]
+    public void ExpireCarryOver_AfterExpiryWithReservedCarryOver_KeepsReservedPortionIntact()
+    {
+        // Arrange
+        var leaveBalance = _leaveBalance;
+        var beforeExpiryDate = leaveBalance.CarryOverExpiresAt.AddDays(-1);
+        var reservedDays = LeaveDays.Create(2).Value;
+
+        leaveBalance.Reserve(days: reservedDays, asOf: beforeExpiryDate);
+
+        var expectedCarryOverReserved = leaveBalance.CarryOverReserved;
+        var afterExpiryDate = leaveBalance.CarryOverExpiresAt.AddDays(1);
+
+        // Act
+        var result = leaveBalance.ExpireCarryOver(asOf: afterExpiryDate);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(leaveBalance.CarryOverReserved, Is.EqualTo(expectedCarryOverReserved));
+            Assert.That(leaveBalance.CarriedOver, Is.EqualTo(expectedCarryOverReserved));
+        });
+    }
+
+    [Test]
+    public void ExpireCarryOver_CalledTwiceAfterExpiry_DoesNotChangeStateOnSecondCall()
+    {
+        // Arrange
+        var leaveBalance = _leaveBalance;
+        var afterExpiryDate = leaveBalance.CarryOverExpiresAt.AddDays(1);
+
+        leaveBalance.ExpireCarryOver(asOf: afterExpiryDate);
+
+        var carriedOverAfterFirstCall = leaveBalance.CarriedOver;
+        var carryOverReservedAfterFirstCall = leaveBalance.CarryOverReserved;
+        var carryOverUsedAfterFirstCall = leaveBalance.CarryOverUsed;
+
+        // Act
+        var result = leaveBalance.ExpireCarryOver(asOf: afterExpiryDate);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(leaveBalance.CarriedOver, Is.EqualTo(carriedOverAfterFirstCall));
+            Assert.That(leaveBalance.CarryOverReserved, Is.EqualTo(carryOverReservedAfterFirstCall));
+            Assert.That(leaveBalance.CarryOverUsed, Is.EqualTo(carryOverUsedAfterFirstCall));
         });
     }
 }
