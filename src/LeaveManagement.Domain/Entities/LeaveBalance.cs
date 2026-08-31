@@ -151,7 +151,45 @@ public class LeaveBalance
 
     public Result<LeaveAllocation> Reserve(LeaveDays days, DateOnly asOf)
     {
-        throw new NotImplementedException();
+        if (days == LeaveDays.Zero)
+        {
+            var failureResult = Result<LeaveAllocation>.Fail("Reserved leave days must be greater than zero");
+
+            return failureResult;
+        }
+
+        var availableDays = Available(asOf);
+
+        if (days.Value > availableDays.Value)
+        {
+            var failureResult = Result<LeaveAllocation>.Fail("Insufficient leave balance for the requested days");
+
+            return failureResult;
+        }
+
+        var carryOverAvailable = asOf > CarryOverExpiresAt
+            ? 0
+            : CarriedOver.Value - CarryOverUsed.Value - CarryOverReserved.Value;
+
+        var carryOverToReserveValue = Math.Min(
+            days.Value,
+            carryOverAvailable
+        );
+
+        var annualToReserveValue = days.Value - carryOverToReserveValue;
+
+        var carryOverToReserve = LeaveDays.Create(carryOverToReserveValue).Value;
+        var annualToReserve = LeaveDays.Create(annualToReserveValue).Value;
+
+        var allocationResult = LeaveAllocation.Create(
+            annual: annualToReserve,
+            carryOver: carryOverToReserve
+        );
+
+        AnnualReserved = AnnualReserved.Add(annualToReserve);
+        CarryOverReserved = CarryOverReserved.Add(carryOverToReserve);
+
+        return allocationResult;
     }
 
     public Result ReleaseReservation(LeaveAllocation allocation, DateOnly asOf)
