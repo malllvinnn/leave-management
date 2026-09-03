@@ -194,7 +194,27 @@ public class LeaveBalance
 
     public Result ReleaseReservation(LeaveAllocation allocation, DateOnly asOf)
     {
-        throw new NotImplementedException();
+        if (allocation.Annual.Value > AnnualReserved.Value || allocation.CarryOver.Value > CarryOverReserved.Value)
+        {
+            var failureResult = Result.Fail("Released allocation exceeds the reserved balance");
+
+            return failureResult;
+        }
+
+        var newAnnualReserved = AnnualReserved.Subtract(allocation.Annual).Value;
+        var newCarryOverReserved = CarryOverReserved.Subtract(allocation.CarryOver).Value;
+
+        var newCarriedOver = asOf > CarryOverExpiresAt
+            ? CarriedOver.Subtract(allocation.CarryOver).Value
+            : CarriedOver;
+
+        AnnualReserved = newAnnualReserved;
+        CarryOverReserved = newCarryOverReserved;
+        CarriedOver = newCarriedOver;
+
+        var successResult = Result.Ok();
+
+        return successResult;
     }
 
     public Result ConfirmUsage(LeaveAllocation allocation)
