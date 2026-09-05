@@ -923,4 +923,126 @@ public class LeaveBalanceTests
             Assert.That(leaveBalance.CarryOverReserved, Is.EqualTo(originalCarryOverReserved));
         });
     }
+
+    [Test]
+    public void ConfirmUsage_WithMatchingAllocation_MovesReservedToUsedPerSource()
+    {
+        // Arrange
+        var leaveBalance = _leaveBalance;
+        var beforeExpiryDate = leaveBalance.CarryOverExpiresAt.AddDays(-1);
+        var reservedDays = LeaveDays.Create(6).Value;
+
+        var reserveResult = leaveBalance.Reserve(
+            days: reservedDays,
+            asOf: beforeExpiryDate
+        );
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(reserveResult.IsSuccess, Is.True);
+            Assert.That(leaveBalance.AnnualReserved, Is.Not.EqualTo(LeaveDays.Zero));
+            Assert.That(leaveBalance.CarryOverReserved, Is.Not.EqualTo(LeaveDays.Zero));
+            Assert.That(leaveBalance.AnnualUsed, Is.EqualTo(LeaveDays.Zero));
+            Assert.That(leaveBalance.CarryOverUsed, Is.EqualTo(LeaveDays.Zero));
+        });
+
+        var allocation = reserveResult.Value;
+
+        // Act
+        var result = leaveBalance.ConfirmUsage(allocation: allocation);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(leaveBalance.AnnualReserved, Is.EqualTo(LeaveDays.Zero));
+            Assert.That(leaveBalance.CarryOverReserved, Is.EqualTo(LeaveDays.Zero));
+            Assert.That(leaveBalance.AnnualUsed, Is.EqualTo(allocation.Annual));
+            Assert.That(leaveBalance.CarryOverUsed, Is.EqualTo(allocation.CarryOver));
+        });
+    }
+
+    [Test]
+    public void ConfirmUsage_ExceedingReservedBucket_ReturnsFailedResultAndDoesNotChangeAnyBucket()
+    {
+        // Arrange
+        var leaveBalance = _leaveBalance;
+        var beforeExpiryDate = leaveBalance.CarryOverExpiresAt.AddDays(-1);
+        var reservedDays = LeaveDays.Create(6).Value;
+
+        var reserveResult = leaveBalance.Reserve(
+            days: reservedDays,
+            asOf: beforeExpiryDate
+        );
+
+        Assert.That(reserveResult.IsSuccess, Is.True);
+
+        var excessiveAllocation = LeaveAllocation.Create(
+            annual: LeaveDays.Create(1).Value, // within limit
+            carryOver: LeaveDays.Create(5).Value // exceed 4
+        ).Value;
+
+        var originalAnnualUsed = leaveBalance.AnnualUsed;
+        var originalAnnualReserved = leaveBalance.AnnualReserved;
+        var originalCarryOverUsed = leaveBalance.CarryOverUsed;
+        var originalCarryOverReserved = leaveBalance.CarryOverReserved;
+
+        // Act
+        var result = leaveBalance.ConfirmUsage(allocation: excessiveAllocation);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Confirmed allocation exceeds the reserved balance"));
+
+            Assert.That(leaveBalance.AnnualUsed, Is.EqualTo(originalAnnualUsed));
+            Assert.That(leaveBalance.AnnualReserved, Is.EqualTo(originalAnnualReserved));
+            Assert.That(leaveBalance.CarryOverUsed, Is.EqualTo(originalCarryOverUsed));
+            Assert.That(leaveBalance.CarryOverReserved, Is.EqualTo(originalCarryOverReserved));
+        });
+    }
+
+    [Test]
+    public void ConfirmUsage_AfterCarryOverExpiry_ConfirmsCarryOverPortion()
+    {
+        // Arrange
+        var leaveBalance = _leaveBalance;
+        var beforeExpiryDate = leaveBalance.CarryOverExpiresAt.AddDays(-1);
+        var afterExpiryDate = leaveBalance.CarryOverExpiresAt.AddDays(1);
+        var reservedDays = LeaveDays.Create(2).Value;
+
+        var reserveResult = leaveBalance.Reserve(
+            days: reservedDays,
+            asOf: beforeExpiryDate
+        );
+
+        Assert.That(reserveResult.IsSuccess, Is.True);
+
+        var allocation = reserveResult.Value;
+
+        var expireResult = leaveBalance.ExpireCarryOver(asOf: afterExpiryDate);
+
+        Assert.That(expireResult.IsSuccess, Is.True);
+
+        // Act
+        var result = leaveBalance.ConfirmUsage(allocation: allocation);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(leaveBalance.CarryOverReserved, Is.EqualTo(LeaveDays.Zero));
+            Assert.That(leaveBalance.CarryOverUsed, Is.EqualTo(allocation.CarryOver));
+            Assert.That(leaveBalance.AnnualReserved, Is.EqualTo(LeaveDays.Zero));
+            Assert.That(leaveBalance.AnnualUsed, Is.EqualTo(LeaveDays.Zero));
+        });
+    }
 }
