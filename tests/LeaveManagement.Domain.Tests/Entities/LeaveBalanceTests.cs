@@ -969,7 +969,7 @@ public class LeaveBalanceTests
     public void ConfirmUsage_ExceedingReservedBucket_ReturnsFailedResultAndDoesNotChangeAnyBucket()
     {
         // Arrange
-        var leaveBalance = _leaveBalance;
+        var leaveBalance = _leaveBalance; // carryOver setup 4
         var beforeExpiryDate = leaveBalance.CarryOverExpiresAt.AddDays(-1);
         var reservedDays = LeaveDays.Create(6).Value;
 

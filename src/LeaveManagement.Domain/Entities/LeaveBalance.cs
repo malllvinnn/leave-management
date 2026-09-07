@@ -194,7 +194,7 @@ public class LeaveBalance
 
     public Result ReleaseReservation(LeaveAllocation allocation, DateOnly asOf)
     {
-        if (allocation.Annual.Value > AnnualReserved.Value || allocation.CarryOver.Value > CarryOverReserved.Value)
+        if (!IsAllocationWithinReservedBuckets(allocation))
         {
             var failureResult = Result.Fail("Released allocation exceeds the reserved balance");
 
@@ -219,7 +219,28 @@ public class LeaveBalance
 
     public Result ConfirmUsage(LeaveAllocation allocation)
     {
-        throw new NotImplementedException();
+        if (!IsAllocationWithinReservedBuckets(allocation))
+        {
+            var failureResult = Result.Fail("Confirmed allocation exceeds the reserved balance");
+
+            return failureResult;
+        }
+
+        var newAnnualReserved = AnnualReserved.Subtract(allocation.Annual).Value;
+        var newCarryOverReserved = CarryOverReserved.Subtract(allocation.CarryOver).Value;
+
+        var newAnnualUsed = AnnualUsed.Add(allocation.Annual);
+        var newCarryOverUsed = CarryOverUsed.Add(allocation.CarryOver);
+
+        AnnualReserved = newAnnualReserved;
+        CarryOverReserved = newCarryOverReserved;
+
+        AnnualUsed = newAnnualUsed;
+        CarryOverUsed = newCarryOverUsed;
+
+        var resultSuccess = Result.Ok();
+
+        return resultSuccess;
     }
 
     public Result CancelUsage(LeaveAllocation allocation, DateOnly asOf)
@@ -253,5 +274,15 @@ public class LeaveBalance
         var successResult = Result.Ok();
 
         return successResult;
+    }
+
+    private bool IsAllocationWithinReservedBuckets(LeaveAllocation allocation)
+    {
+        var annualWithinReserved = allocation.Annual.Value <= AnnualReserved.Value;
+        var carryOverWithinReserved = allocation.CarryOver.Value <= CarryOverReserved.Value;
+
+        var result = annualWithinReserved && carryOverWithinReserved;
+
+        return result;
     }
 }
