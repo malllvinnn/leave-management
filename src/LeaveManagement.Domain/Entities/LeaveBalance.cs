@@ -245,7 +245,27 @@ public class LeaveBalance
 
     public Result CancelUsage(LeaveAllocation allocation, DateOnly asOf)
     {
-        throw new NotImplementedException();
+        if (allocation.Annual.Value > AnnualUsed.Value || allocation.CarryOver.Value > CarryOverUsed.Value)
+        {
+            var failureResult = Result.Fail("Cancelled allocation exceeds the used balance");
+
+            return failureResult;
+        }
+
+        var newAnnualUsed = AnnualUsed.Subtract(allocation.Annual).Value;
+        var newCarryOverUsed = CarryOverUsed.Subtract(allocation.CarryOver).Value;
+
+        var newCarriedOver = asOf > CarryOverExpiresAt
+            ? CarriedOver.Subtract(allocation.CarryOver).Value
+            : CarriedOver;
+
+        AnnualUsed = newAnnualUsed;
+        CarryOverUsed = newCarryOverUsed;
+        CarriedOver = newCarriedOver;
+
+        var successResult = Result.Ok();
+
+        return successResult;
     }
 
     public Result Adjust(
