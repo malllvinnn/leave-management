@@ -40,6 +40,7 @@ classDiagram
     +LeaveDays CarryOverUsed
     +LeaveDays CarryOverReserved
     +IReadOnlyList~QuotaAdjustment~ Adjustments
+    -List~QuotaAdjustment~ _adjustments
     -LeaveBalance(id: LeaveBalanceId, employeeId: EmployeeId, year: int, annualQuota: LeaveDays, carriedOver: LeaveDays, carryOverExpiresAt: DateOnly)
     +Create(employeeId: EmployeeId, year: int, annualQuota: LeaveDays, carriedOver: LeaveDays) Result~LeaveBalance~$
     +CalculateProratedQuota(hireDate: DateOnly, year: int) Result~LeaveDays~$
@@ -122,7 +123,7 @@ classDiagram
     +EmployeeId AdjustedBy
     +DateTimeOffset AdjustedAt
     -QuotaAdjustment(id: Guid, balanceId: LeaveBalanceId, days: int, reason: Reason, adjustedBy: EmployeeId, adjustedAt: DateTimeOffset)
-    +Create(balanceId: LeaveBalanceId, days: int, reason: Reason, adjustedBy: EmployeeId, adjustedAt: DateTimeOffset) Result~QuotaAdjustment~$
+    +Create(balanceId: LeaveBalanceId, days: int, reason: Reason?, adjustedBy: EmployeeId, adjustedAt: DateTimeOffset) Result~QuotaAdjustment~$
   }
 
   %% Operational records
