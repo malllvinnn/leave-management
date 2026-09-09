@@ -275,7 +275,39 @@ public class LeaveBalance
         DateTimeOffset now
     )
     {
-        throw new NotImplementedException();
+        var adjustmentResult = QuotaAdjustment.Create(
+            leaveBalanceId: Id,
+            days: days,
+            reason: reason,
+            adjustedBy: actorId,
+            adjustedAt: now
+        );
+
+        if (adjustmentResult.IsFailure)
+        {
+            var failureResult = Result.Fail(adjustmentResult.Error);
+
+            return failureResult;
+        }
+
+        var newAnnualQuota = AnnualQuota.Value + days;
+        var floorQuota = AnnualUsed.Value + AnnualReserved.Value;
+
+        if (newAnnualQuota < floorQuota)
+        {
+            var failureResult = Result.Fail("Quota adjustment cannot make the available balance negative");
+
+            return failureResult;
+        }
+
+        var annualQuotaResult = LeaveDays.Create(newAnnualQuota);
+
+        AnnualQuota = annualQuotaResult.Value;
+        _adjustments.Add(adjustmentResult.Value);
+
+        var successResult = Result.Ok();
+
+        return successResult;
     }
 
     public Result ExpireCarryOver(DateOnly asOf)
