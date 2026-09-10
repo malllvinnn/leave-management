@@ -28,6 +28,11 @@ public sealed class LeaveCalculator
                 continue; // Skip weekends
             }
 
+            if (holidays.Contains(date))
+            {
+                continue; // Skip holidays
+            }
+
             workingDaysCount++;
         }
 
