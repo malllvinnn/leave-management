@@ -179,4 +179,123 @@ public class LeaveCalculatorTests
         // Assert
         Assert.That(result.Value, Is.EqualTo(0));
     }
+
+    [Test]
+    public void Calculate_WithHolidayOutsideRange_IgnoresIt()
+    {
+        // Arrange
+        var period = DateRange.Create(
+            start: new DateOnly(2026, 12, 21),
+            end: new DateOnly(2026, 12, 25)
+        ).Value;
+
+        var holidays = new List<DateOnly>
+        {
+            new DateOnly(2026, 12, 18),
+            new DateOnly(2026, 12, 28) // Holiday outside the range period
+        };
+
+        // Act
+        var result = _leaveCalculator.Calculate(
+            period: period,
+            holidays: holidays
+        );
+
+        // Assert
+        Assert.That(result.Value, Is.EqualTo(5));
+    }
+
+    [Test]
+    public void Calculate_WithHolidayFallingOnSunday_DoesNotSubtractTwice()
+    {
+        // Arrange
+        var period = DateRange.Create(
+            start: new DateOnly(2026, 12, 21),
+            end: new DateOnly(2026, 12, 27)
+        ).Value;
+
+        var holidays = new List<DateOnly>
+        {
+            new DateOnly(2026, 12, 27), // Sunday
+        };
+
+        // Act
+        var result = _leaveCalculator.Calculate(
+            period: period,
+            holidays: holidays
+        );
+
+        // Assert
+        Assert.That(result.Value, Is.EqualTo(5)); // Sunday is already excluded as a weekend.
+    }
+
+    [Test]
+    public void Calculate_WithDuplicateHolidayEntries_DoesNotSubtractTwice()
+    {
+        // Arrange
+        var period = DateRange.Create(
+            start: new DateOnly(2026, 12, 21),
+            end: new DateOnly(2026, 12, 25)
+        ).Value;
+
+        var holidays = new List<DateOnly>
+        {
+            new DateOnly(2026, 12, 23),
+            new DateOnly(2026, 12, 23) // Duplicate holiday
+        };
+
+        // Act
+        var result = _leaveCalculator.Calculate(
+            period: period,
+            holidays: holidays
+        );
+
+        // Assert
+        Assert.That(result.Value, Is.EqualTo(4));
+    }
+
+    [Test]
+    public void Calculate_WithPrdExample_ReturnsFourDays()
+    {
+        // Arrange
+        var period = DateRange.Create(
+            start: new DateOnly(2026, 12, 24),
+            end: new DateOnly(2026, 12, 30)
+        ).Value;
+
+        var holidays = new List<DateOnly>
+        {
+            new DateOnly(2026, 12, 25)
+        };
+
+        // Act
+        var result = _leaveCalculator.Calculate(
+            period: period,
+            holidays: holidays
+        );
+
+        // Assert
+        Assert.That(result.Value, Is.EqualTo(4));
+    }
+
+    [Test]
+    public void Calculate_WithEmptyHolidayCollection_EqualsWeekdayCount()
+    {
+        // Arrange
+        var period = DateRange.Create(
+            start: new DateOnly(2026, 12, 28),
+            end: new DateOnly(2026, 12, 31)
+        ).Value;
+
+        var holidays = new List<DateOnly>();
+
+        // Act
+        var result = _leaveCalculator.Calculate(
+            period: period,
+            holidays: holidays
+        );
+
+        // Assert
+        Assert.That(result.Value, Is.EqualTo(4));
+    }
 }
