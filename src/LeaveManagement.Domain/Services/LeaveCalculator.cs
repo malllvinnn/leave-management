@@ -9,6 +9,16 @@ public sealed class LeaveCalculator
         IReadOnlyCollection<DateOnly> holidays
     )
     {
+        if (period is null)
+        {
+            throw new ArgumentNullException(nameof(period));
+        }
+
+        if (holidays is null)
+        {
+            throw new ArgumentNullException(nameof(holidays));
+        }
+
         throw new NotImplementedException();
     }
 }
