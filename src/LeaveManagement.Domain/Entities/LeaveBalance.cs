@@ -20,7 +20,7 @@ public class LeaveBalance
     {
         get
         {
-            return _adjustments;
+            return _adjustments.AsReadOnly();
         }
     }
 
