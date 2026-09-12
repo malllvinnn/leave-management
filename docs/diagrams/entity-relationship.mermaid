@@ -1,8 +1,12 @@
-%% Structural ERD
+%% Target structural ERD (PRD v1.3 and TASKS W1-12/W2-01).
+%% This models the planned schema, not an existing migration or deployed database.
 %% Defines tables, columns, and foreign-key relationships only.
 %% Detailed indexes and ON DELETE behavior are finalized in W2-01.
 %% Date-overlap enforcement and performance indexes are not final.
 %% PostgreSQL xmin is a system column used as an optimistic concurrency token.
+%% LeaveRequest.Create receives today for validation only; it is not a persisted column.
+%% Override requires an Approve/Reject outcome; other decision types require NULL outcome.
+%% A single bypassed candidate uses its ID; multiple candidates use NULL plus an AuditEntry.payload snapshot.
 
 erDiagram
   Employee {
@@ -56,10 +60,11 @@ erDiagram
     UUID id PK "NOT NULL"
     UUID leave_request_id FK "NOT NULL"
     UUID actor_id FK "NOT NULL"
-    UUID bypassed_approver_id FK "NULL"
+    UUID bypassed_approver_id FK "NULL; non-NULL only for Override"
     INT type "NOT NULL"
+    INT override_outcome "Approve/Reject for Override; NULL otherwise"
     INT stage "NOT NULL"
-    VARCHAR(500) reason "conditional by decision type"
+    VARCHAR(500) reason "required for Reject/Override; optional for Approve/Cancel"
     TIMESTAMPTZ decided_at "NOT NULL"
   }
 
