@@ -37,7 +37,16 @@ public class LeaveRequest
         DateTimeOffset submittedAt
     )
     {
-        throw new NotImplementedException();
+        Id = id;
+        EmployeeId = employeeId;
+        Period = period;
+        WorkingDays = workingDays;
+        Allocation = allocation;
+        Type = type;
+        Reason = reason;
+        SubmittedAt = submittedAt.ToUniversalTime();
+
+        Status = LeaveStatus.Pending;
     }
 
     public static Result<LeaveRequest> Create(
@@ -51,7 +60,29 @@ public class LeaveRequest
         DateTimeOffset submittedAt
     )
     {
-        throw new NotImplementedException();
+        if (allocation.Total != workingDays)
+        {
+            var failureResult = Result<LeaveRequest>.Fail("Leave allocation must equal the working days of the request");
+
+            return failureResult;
+        }
+
+        var newId = LeaveRequestId.New();
+
+        var leaveRequest = new LeaveRequest(
+            id: newId,
+            employeeId: employeeId,
+            period: period,
+            workingDays: workingDays,
+            allocation: allocation,
+            type: type,
+            reason: reason,
+            submittedAt: submittedAt
+        );
+
+        var successResult = Result<LeaveRequest>.Ok(leaveRequest);
+
+        return successResult;
     }
 
     public Result ApproveFirstStage(
