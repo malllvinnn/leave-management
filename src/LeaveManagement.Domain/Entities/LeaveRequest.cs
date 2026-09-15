@@ -67,6 +67,13 @@ public class LeaveRequest
             return failureResult;
         }
 
+        if (period.Start.Year != today.Year)
+        {
+            var failureResult = Result<LeaveRequest>.Fail("Leave request must be within the current calendar year");
+
+            return failureResult;
+        }
+
         if (allocation.Total != workingDays)
         {
             var failureResult = Result<LeaveRequest>.Fail("Leave allocation must equal the working days of the request");
