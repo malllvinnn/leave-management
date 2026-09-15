@@ -127,4 +127,47 @@ public class LeaveRequestTests
         Assert.That(result.IsFailure, Is.True);
         Assert.That(result.Error, Is.EqualTo("Leave allocation must equal the working days of the request"));
     }
+
+    [TestCase(LeaveType.AnnualLeave, 2025)]
+    [TestCase(LeaveType.AnnualLeave, 2026)]
+    [TestCase(LeaveType.SickLeave, 2025)]
+    [TestCase(LeaveType.SickLeave, 2026)]
+    public void Create_WithPeriodSpanningCalendarYears_ReturnsSingleCalendarYearFailure(
+        LeaveType type,
+        int startYear
+    )
+    {
+        // Arrange
+        var period = DateRange.Create(
+            start: new DateOnly(startYear, 12, 31),
+            end: new DateOnly(startYear + 1, 1, 1)
+        ).Value;
+
+        var workingDays = LeaveDays.Create(2).Value;
+
+        var allocation = LeaveAllocation.Create(
+            annual: LeaveDays.Create(2).Value,
+            carryOver: LeaveDays.Create(0).Value
+        ).Value;
+
+        // Act
+        var result = LeaveRequest.Create(
+            employeeId: _employeeId,
+            period: period,
+            workingDays: workingDays,
+            allocation: allocation,
+            type: type,
+            reason: _validReason,
+            today: _earlyMarchToday,
+            submittedAt: _submittedAtPlusSeven
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Leave request must be within a single calendar year"));
+        });
+    }
 }
