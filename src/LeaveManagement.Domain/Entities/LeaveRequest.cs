@@ -60,6 +60,13 @@ public class LeaveRequest
         DateTimeOffset submittedAt
     )
     {
+        if (period.Start.Year != period.End.Year)
+        {
+            var failureResult = Result<LeaveRequest>.Fail("Leave request must be within a single calendar year");
+
+            return failureResult;
+        }
+
         if (allocation.Total != workingDays)
         {
             var failureResult = Result<LeaveRequest>.Fail("Leave allocation must equal the working days of the request");
