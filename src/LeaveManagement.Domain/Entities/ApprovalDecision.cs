@@ -28,7 +28,15 @@ public class ApprovalDecision
         DateTimeOffset decidedAt
     )
     {
-        throw new NotImplementedException();
+        Id = id;
+        LeaveRequestId = requestId;
+        ActorId = actorId;
+        Type = type;
+        Stage = stage;
+        Reason = reason;
+        BypassedApproverId = bypassedApproverId;
+        OverrideOutcome = overrideOutcome;
+        DecidedAt = decidedAt.ToUniversalTime();
     }
 
     public static Result<ApprovalDecision> Create(
@@ -42,6 +50,22 @@ public class ApprovalDecision
         DateTimeOffset decidedAt
     )
     {
-        throw new NotImplementedException();
+        var id = Guid.CreateVersion7();
+
+        var approvalDecision = new ApprovalDecision(
+            id: id,
+            requestId: requestId,
+            actorId: actorId,
+            type: type,
+            stage: stage,
+            reason: reason,
+            bypassedApproverId: bypassedApproverId,
+            overrideOutcome: overrideOutcome,
+            decidedAt: decidedAt
+        );
+
+        var successResult = Result<ApprovalDecision>.Ok(approvalDecision);
+
+        return successResult;
     }
 }
