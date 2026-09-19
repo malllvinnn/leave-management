@@ -50,6 +50,13 @@ public class ApprovalDecision
         DateTimeOffset decidedAt
     )
     {
+        if (type == DecisionType.Reject && reason is null)
+        {
+            var failureResult = Result<ApprovalDecision>.Fail("Rejection reason cannot be empty");
+
+            return failureResult;
+        }
+
         var id = Guid.CreateVersion7();
 
         var approvalDecision = new ApprovalDecision(
