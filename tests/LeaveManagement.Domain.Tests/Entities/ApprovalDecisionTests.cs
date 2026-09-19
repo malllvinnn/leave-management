@@ -84,4 +84,75 @@ public class ApprovalDecisionTests
         });
     }
 
+    [TestCase(ApprovalStage.First)]
+    [TestCase(ApprovalStage.Final)]
+    public void Create_WithRejectAndValidReason_ReturnsSuccessfulResultWithCompleteState(ApprovalStage stage)
+    {
+        // Arrange
+        var type = DecisionType.Reject;
+        var reason = _validReason;
+
+        // Act
+        var result = ApprovalDecision.Create(
+            requestId: _requestId,
+            actorId: _actorId,
+            type: type,
+            stage: stage,
+            reason: reason,
+            bypassedApproverId: null,
+            overrideOutcome: null,
+            decidedAt: _decidedAtPlusSeven
+        );
+
+        // Assert
+        Assert.That(result.IsSuccess, Is.True);
+
+        var request = result.Value;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(request.Id, Is.Not.EqualTo(Guid.Empty));
+            Assert.That(request.LeaveRequestId, Is.EqualTo(_requestId));
+            Assert.That(request.ActorId, Is.EqualTo(_actorId));
+            Assert.That(request.Type, Is.EqualTo(type));
+            Assert.That(request.Stage, Is.EqualTo(stage));
+            Assert.That(request.Reason, Is.EqualTo(reason));
+            Assert.That(request.BypassedApproverId, Is.Null);
+            Assert.That(request.OverrideOutcome, Is.Null);
+            Assert.That(request.DecidedAt, Is.EqualTo(_decidedAtPlusSeven.ToUniversalTime()));
+            Assert.That(request.DecidedAt.Offset, Is.EqualTo(TimeSpan.Zero));
+        });
+    }
+
+    [TestCase(ApprovalStage.First)]
+    [TestCase(ApprovalStage.Final)]
+    public void Create_WithRejectAndNullReason_ReturnsFailedResultWithError(ApprovalStage stage)
+    {
+        // Arrange
+        var type = DecisionType.Reject;
+        Reason? reason = null;
+
+        // Act
+        var result = ApprovalDecision.Create(
+            requestId: _requestId,
+            actorId: _actorId,
+            type: type,
+            stage: stage,
+            reason: reason,
+            bypassedApproverId: null,
+            overrideOutcome: null,
+            decidedAt: _decidedAtPlusSeven
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Rejection reason cannot be empty"));
+        });
+    }
 }
