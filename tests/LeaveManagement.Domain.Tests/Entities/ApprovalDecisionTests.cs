@@ -64,23 +64,23 @@ public class ApprovalDecisionTests
         // Assert
         Assert.That(result.IsSuccess, Is.True);
 
-        var request = result.Value;
+        var decision = result.Value;
 
         Assert.Multiple(() =>
         {
             Assert.That(result.IsFailure, Is.False);
             Assert.That(result.Error, Is.Empty);
 
-            Assert.That(request.Id, Is.Not.EqualTo(Guid.Empty));
-            Assert.That(request.LeaveRequestId, Is.EqualTo(requestId));
-            Assert.That(request.ActorId, Is.EqualTo(_actorId));
-            Assert.That(request.Type, Is.EqualTo(type));
-            Assert.That(request.Stage, Is.EqualTo(stage));
-            Assert.That(request.Reason, Is.EqualTo(reason));
-            Assert.That(request.BypassedApproverId, Is.Null);
-            Assert.That(request.OverrideOutcome, Is.Null);
-            Assert.That(request.DecidedAt, Is.EqualTo(_decidedAtPlusSeven.ToUniversalTime()));
-            Assert.That(request.DecidedAt.Offset, Is.EqualTo(TimeSpan.Zero));
+            Assert.That(decision.Id, Is.Not.EqualTo(Guid.Empty));
+            Assert.That(decision.LeaveRequestId, Is.EqualTo(requestId));
+            Assert.That(decision.ActorId, Is.EqualTo(_actorId));
+            Assert.That(decision.Type, Is.EqualTo(type));
+            Assert.That(decision.Stage, Is.EqualTo(stage));
+            Assert.That(decision.Reason, Is.EqualTo(reason));
+            Assert.That(decision.BypassedApproverId, Is.Null);
+            Assert.That(decision.OverrideOutcome, Is.Null);
+            Assert.That(decision.DecidedAt, Is.EqualTo(_decidedAtPlusSeven.ToUniversalTime()));
+            Assert.That(decision.DecidedAt.Offset, Is.EqualTo(TimeSpan.Zero));
         });
     }
 
@@ -107,23 +107,23 @@ public class ApprovalDecisionTests
         // Assert
         Assert.That(result.IsSuccess, Is.True);
 
-        var request = result.Value;
+        var decision = result.Value;
 
         Assert.Multiple(() =>
         {
             Assert.That(result.IsFailure, Is.False);
             Assert.That(result.Error, Is.Empty);
 
-            Assert.That(request.Id, Is.Not.EqualTo(Guid.Empty));
-            Assert.That(request.LeaveRequestId, Is.EqualTo(_requestId));
-            Assert.That(request.ActorId, Is.EqualTo(_actorId));
-            Assert.That(request.Type, Is.EqualTo(type));
-            Assert.That(request.Stage, Is.EqualTo(stage));
-            Assert.That(request.Reason, Is.EqualTo(reason));
-            Assert.That(request.BypassedApproverId, Is.Null);
-            Assert.That(request.OverrideOutcome, Is.Null);
-            Assert.That(request.DecidedAt, Is.EqualTo(_decidedAtPlusSeven.ToUniversalTime()));
-            Assert.That(request.DecidedAt.Offset, Is.EqualTo(TimeSpan.Zero));
+            Assert.That(decision.Id, Is.Not.EqualTo(Guid.Empty));
+            Assert.That(decision.LeaveRequestId, Is.EqualTo(_requestId));
+            Assert.That(decision.ActorId, Is.EqualTo(_actorId));
+            Assert.That(decision.Type, Is.EqualTo(type));
+            Assert.That(decision.Stage, Is.EqualTo(stage));
+            Assert.That(decision.Reason, Is.EqualTo(reason));
+            Assert.That(decision.BypassedApproverId, Is.Null);
+            Assert.That(decision.OverrideOutcome, Is.Null);
+            Assert.That(decision.DecidedAt, Is.EqualTo(_decidedAtPlusSeven.ToUniversalTime()));
+            Assert.That(decision.DecidedAt.Offset, Is.EqualTo(TimeSpan.Zero));
         });
     }
 
@@ -213,6 +213,60 @@ public class ApprovalDecisionTests
             Assert.That(result.IsSuccess, Is.False);
             Assert.That(result.IsFailure, Is.True);
             Assert.That(result.Error, Is.EqualTo("Bypassed approver is only allowed for override decisions"));
+        });
+    }
+
+    [TestCase(DecisionType.Approve, ApprovalStage.First, false)]
+    [TestCase(DecisionType.Reject, ApprovalStage.First, false)]
+    [TestCase(DecisionType.Approve, ApprovalStage.Final, false)]
+    [TestCase(DecisionType.Reject, ApprovalStage.Final, false)]
+    [TestCase(DecisionType.Approve, ApprovalStage.First, true)]
+    [TestCase(DecisionType.Reject, ApprovalStage.First, true)]
+    [TestCase(DecisionType.Approve, ApprovalStage.Final, true)]
+    [TestCase(DecisionType.Reject, ApprovalStage.Final, true)]
+    public void Create_WithValidOverrideContext_ReturnsSuccessfulResultWithCompleteState(
+        DecisionType outcome,
+        ApprovalStage stage,
+        bool hasBypassedApprover
+    )
+    {
+        // Arrange
+        var type = DecisionType.Override;
+        var reason = Reason.Create("Valid override reason").Value;
+        EmployeeId? bypassedApproverId = hasBypassedApprover ? EmployeeId.New() : null;
+
+        // Act
+        var result = ApprovalDecision.Create(
+            requestId: _requestId,
+            actorId: _actorId,
+            type: type,
+            stage: stage,
+            reason: reason,
+            bypassedApproverId: bypassedApproverId,
+            overrideOutcome: outcome,
+            decidedAt: _decidedAtPlusSeven
+        );
+
+        // Assert
+        Assert.That(result.IsSuccess, Is.True);
+
+        var decision = result.Value;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(decision.Id, Is.Not.EqualTo(Guid.Empty));
+            Assert.That(decision.LeaveRequestId, Is.EqualTo(_requestId));
+            Assert.That(decision.ActorId, Is.EqualTo(_actorId));
+            Assert.That(decision.Type, Is.EqualTo(type));
+            Assert.That(decision.Stage, Is.EqualTo(stage));
+            Assert.That(decision.Reason, Is.EqualTo(reason));
+            Assert.That(decision.BypassedApproverId, Is.EqualTo(bypassedApproverId));
+            Assert.That(decision.OverrideOutcome, Is.EqualTo(outcome));
+            Assert.That(decision.DecidedAt, Is.EqualTo(_decidedAtPlusSeven.ToUniversalTime()));
+            Assert.That(decision.DecidedAt.Offset, Is.EqualTo(TimeSpan.Zero));
         });
     }
 }
