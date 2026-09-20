@@ -57,6 +57,20 @@ public class ApprovalDecision
             return failureResult;
         }
 
+        if (type is not DecisionType.Override && overrideOutcome is not null)
+        {
+            var failureResult = Result<ApprovalDecision>.Fail("Override outcome is only allowed for override decisions");
+
+            return failureResult;
+        }
+
+        if (type is not DecisionType.Override && bypassedApproverId is not null)
+        {
+            var failureResult = Result<ApprovalDecision>.Fail("Bypassed approver is only allowed for override decisions");
+
+            return failureResult;
+        }
+
         var id = Guid.CreateVersion7();
 
         var approvalDecision = new ApprovalDecision(
