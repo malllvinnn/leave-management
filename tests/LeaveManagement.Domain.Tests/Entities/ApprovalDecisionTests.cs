@@ -155,4 +155,64 @@ public class ApprovalDecisionTests
             Assert.That(result.Error, Is.EqualTo("Rejection reason cannot be empty"));
         });
     }
+
+    [TestCase(DecisionType.Approve)]
+    [TestCase(DecisionType.Reject)]
+    [TestCase(DecisionType.Cancel)]
+    public void Create_WithNonOverrideTypeAndOverrideOutcome_ReturnsFailedResultWithError(DecisionType type)
+    {
+        // Arrange
+        var stage = ApprovalStage.First;
+        var overrideOutcome = DecisionType.Approve;
+
+        // Act
+        var result = ApprovalDecision.Create(
+            requestId: _requestId,
+            actorId: _actorId,
+            type: type,
+            stage: stage,
+            reason: _validReason,
+            bypassedApproverId: null,
+            overrideOutcome: overrideOutcome,
+            decidedAt: _decidedAtPlusSeven
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Override outcome is only allowed for override decisions"));
+        });
+    }
+
+    [TestCase(DecisionType.Approve)]
+    [TestCase(DecisionType.Reject)]
+    [TestCase(DecisionType.Cancel)]
+    public void Create_WithNonOverrideTypeAndBypassedApprover_ReturnsFailedResultWithError(DecisionType type)
+    {
+        // Arrange
+        var stage = ApprovalStage.First;
+        var bypassedApproverId = EmployeeId.New();
+
+        // Act
+        var result = ApprovalDecision.Create(
+            requestId: _requestId,
+            actorId: _actorId,
+            type: type,
+            stage: stage,
+            reason: _validReason,
+            bypassedApproverId: bypassedApproverId,
+            overrideOutcome: null,
+            decidedAt: _decidedAtPlusSeven
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Bypassed approver is only allowed for override decisions"));
+        });
+    }
 }
