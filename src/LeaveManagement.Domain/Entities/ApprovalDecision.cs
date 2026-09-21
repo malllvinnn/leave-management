@@ -71,6 +71,13 @@ public class ApprovalDecision
             return failureResult;
         }
 
+        if (type is DecisionType.Override && (reason is null || reason.Value.Length < 10))
+        {
+            var failureResult = Result<ApprovalDecision>.Fail("Override reason must be at least 10 characters");
+
+            return failureResult;
+        }
+
         var id = Guid.CreateVersion7();
 
         var approvalDecision = new ApprovalDecision(
