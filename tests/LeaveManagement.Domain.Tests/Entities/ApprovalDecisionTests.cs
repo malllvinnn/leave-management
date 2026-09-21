@@ -343,4 +343,35 @@ public class ApprovalDecisionTests
             Assert.That(decision.Reason!.Value, Has.Length.EqualTo(10));
         });
     }
+
+    [TestCase(null)]
+    [TestCase(DecisionType.Cancel)]
+    [TestCase(DecisionType.Override)]
+    public void Create_WithOverrideAndInvalidOutcome_ReturnsFailedResultWithError(DecisionType? outcome)
+    {
+        // Arrange
+        var type = DecisionType.Override;
+        var stage = ApprovalStage.First;
+        var bypassedApproverId = EmployeeId.New();
+
+        // Act
+        var result = ApprovalDecision.Create(
+            requestId: _requestId,
+            actorId: _actorId,
+            type: type,
+            stage: stage,
+            reason: _validReason,
+            bypassedApproverId: bypassedApproverId,
+            overrideOutcome: outcome,
+            decidedAt: _decidedAtPlusSeven
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Override outcome must be approve or reject"));
+        });
+    }
 }
