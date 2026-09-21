@@ -269,4 +269,78 @@ public class ApprovalDecisionTests
             Assert.That(decision.DecidedAt.Offset, Is.EqualTo(TimeSpan.Zero));
         });
     }
+
+    [TestCase(null)]
+    [TestCase("A")]
+    [TestCase("123456789")]
+    [TestCase("  123456789  ")]
+    public void Create_WithOverrideAndMissingOrShortReason_ReturnsFailedResultWithError(string? rawReason)
+    {
+        // Arrange
+        Reason? reason = rawReason is null ? null : Reason.Create(rawReason).Value;
+
+        // Act
+        var result = ApprovalDecision.Create(
+            requestId: _requestId,
+            actorId: _actorId,
+            type: DecisionType.Override,
+            stage: ApprovalStage.First,
+            reason: reason,
+            bypassedApproverId: null,
+            overrideOutcome: DecisionType.Approve,
+            decidedAt: _decidedAtPlusSeven
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Override reason must be at least 10 characters"));
+        });
+    }
+
+    [Test]
+    public void Create_WithOverrideAndTenCharacterReason_ReturnsSuccessfulResultWithCompleteState()
+    {
+        // Arrange
+        var reason = Reason.Create("  Valid note  ").Value;
+        var expectedReason = Reason.Create("Valid note").Value;
+
+        // Act
+        var result = ApprovalDecision.Create(
+            requestId: _requestId,
+            actorId: _actorId,
+            type: DecisionType.Override,
+            stage: ApprovalStage.First,
+            reason: reason,
+            bypassedApproverId: null,
+            overrideOutcome: DecisionType.Approve,
+            decidedAt: _decidedAtPlusSeven
+        );
+
+        // Assert
+        Assert.That(result.IsSuccess, Is.True);
+
+        var decision = result.Value;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(decision.Id, Is.Not.EqualTo(Guid.Empty));
+            Assert.That(decision.LeaveRequestId, Is.EqualTo(_requestId));
+            Assert.That(decision.ActorId, Is.EqualTo(_actorId));
+            Assert.That(decision.Type, Is.EqualTo(DecisionType.Override));
+            Assert.That(decision.Stage, Is.EqualTo(ApprovalStage.First));
+            Assert.That(decision.Reason, Is.EqualTo(expectedReason));
+            Assert.That(decision.BypassedApproverId, Is.Null);
+            Assert.That(decision.OverrideOutcome, Is.EqualTo(DecisionType.Approve));
+            Assert.That(decision.DecidedAt, Is.EqualTo(_decidedAtPlusSeven.ToUniversalTime()));
+            Assert.That(decision.DecidedAt.Offset, Is.EqualTo(TimeSpan.Zero));
+
+            Assert.That(decision.Reason!.Value, Has.Length.EqualTo(10));
+        });
+    }
 }
