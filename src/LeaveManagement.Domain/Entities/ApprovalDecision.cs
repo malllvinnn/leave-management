@@ -78,6 +78,13 @@ public class ApprovalDecision
             return failureResult;
         }
 
+        if (type is DecisionType.Override && overrideOutcome is not DecisionType.Approve and not DecisionType.Reject)
+        {
+            var failureResult = Result<ApprovalDecision>.Fail("Override outcome must be approve or reject");
+
+            return failureResult;
+        }
+
         var id = Guid.CreateVersion7();
 
         var approvalDecision = new ApprovalDecision(
