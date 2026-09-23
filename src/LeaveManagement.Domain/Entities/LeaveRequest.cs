@@ -106,6 +106,17 @@ public class LeaveRequest
         DateTimeOffset now
     )
     {
+        if (requiresFinalApproval && WorkingDays.Value <= 5)
+        {
+            var failureResult = Result.Fail("Final approval cannot be required for requests of 5 working days or fewer");
+
+            return failureResult;
+        }
+
+        var targetStatus = requiresFinalApproval
+            ? LeaveStatus.PendingFinalApproval
+            : LeaveStatus.Approved;
+
         var approvalDecision = ApprovalDecision.Create(
             requestId: Id,
             actorId: approverId,
@@ -127,7 +138,7 @@ public class LeaveRequest
         var decision = approvalDecision.Value;
 
         _decisions.Add(decision);
-        Status = LeaveStatus.Approved;
+        Status = targetStatus;
 
         var successResult = Result.Ok();
 
