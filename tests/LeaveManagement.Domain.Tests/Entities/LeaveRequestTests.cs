@@ -538,4 +538,145 @@ public class LeaveRequestTests
             Assert.That(decision.Reason, Is.EqualTo(approvalReason));
         });
     }
+
+    [TestCase(6)]
+    [TestCase(10)]
+    public void ApproveFirstStage_WithFinalApprovalRequiredForLongRequest_ReturnsPendingFinalApprovalWithFirstStageDecision(int workingDays)
+    {
+        // Arrange
+        var endDay = workingDays switch
+        {
+            6 => 23,
+            10 => 27,
+            _ => throw new ArgumentOutOfRangeException(nameof(workingDays))
+        };
+
+        var period = DateRange.Create(
+            start: new DateOnly(2026, 3, 16),
+            end: new DateOnly(2026, 3, endDay)
+        ).Value;
+
+        var requestedWorkingDays = LeaveDays.Create(workingDays).Value;
+
+        var allocation = LeaveAllocation.Create(
+            annual: requestedWorkingDays,
+            carryOver: LeaveDays.Zero
+        ).Value;
+
+        var createResult = LeaveRequest.Create(
+            employeeId: _employeeId,
+            period: period,
+            workingDays: requestedWorkingDays,
+            allocation: allocation,
+            type: _annualType,
+            reason: _validReason,
+            today: _earlyMarchToday,
+            submittedAt: _submittedAtPlusSeven
+        );
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        // Act
+        var result = request.ApproveFirstStage(
+            approverId: _approverId,
+            requiresFinalApproval: true,
+            reason: _validApprovalReason,
+            now: _firstApprovalAt
+        );
+
+        // Assert
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(request.Decisions, Has.Count.EqualTo(1));
+
+        var decision = request.Decisions.Single();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(request.Status, Is.EqualTo(LeaveStatus.PendingFinalApproval));
+            Assert.That(decision.Type, Is.EqualTo(DecisionType.Approve));
+            Assert.That(decision.Stage, Is.EqualTo(ApprovalStage.First));
+        });
+    }
+
+    [TestCase(1)]
+    [TestCase(5)]
+    public void ApproveFirstStage_WithFinalApprovalRequiredForShortRequest_ReturnsFailedResultWithoutChangingRequest(int workingDays)
+    {
+        // Arrange
+        var endDay = workingDays switch
+        {
+            1 => 16,
+            5 => 20,
+            _ => throw new ArgumentOutOfRangeException(nameof(workingDays))
+        };
+
+        var period = DateRange.Create(
+            start: new DateOnly(2026, 3, 16),
+            end: new DateOnly(2026, 3, endDay)
+        ).Value;
+
+        var requestedWorkingDays = LeaveDays.Create(workingDays).Value;
+
+        var allocation = LeaveAllocation.Create(
+            annual: requestedWorkingDays,
+            carryOver: LeaveDays.Zero
+        ).Value;
+
+        var createResult = LeaveRequest.Create(
+            employeeId: _employeeId,
+            period: period,
+            workingDays: requestedWorkingDays,
+            allocation: allocation,
+            type: _annualType,
+            reason: _validReason,
+            today: _earlyMarchToday,
+            submittedAt: _submittedAtPlusSeven
+        );
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        var originalId = request.Id;
+        var originalEmployeeId = request.EmployeeId;
+        var originalPeriod = request.Period;
+        var originalWorkingDays = request.WorkingDays;
+        var originalAllocation = request.Allocation;
+        var originalType = request.Type;
+        var originalReason = request.Reason;
+        var originalSubmittedAt = request.SubmittedAt;
+
+        // Act
+        var result = request.ApproveFirstStage(
+            approverId: _approverId,
+            requiresFinalApproval: true,
+            reason: _validApprovalReason,
+            now: _firstApprovalAt
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Final approval cannot be required for requests of 5 working days or fewer"));
+
+            Assert.That(request.Id, Is.EqualTo(originalId));
+            Assert.That(request.EmployeeId, Is.EqualTo(originalEmployeeId));
+            Assert.That(request.Period, Is.EqualTo(originalPeriod));
+            Assert.That(request.WorkingDays, Is.EqualTo(originalWorkingDays));
+            Assert.That(request.Allocation, Is.EqualTo(originalAllocation));
+            Assert.That(request.Type, Is.EqualTo(originalType));
+            Assert.That(request.Reason, Is.EqualTo(originalReason));
+            Assert.That(request.SubmittedAt, Is.EqualTo(originalSubmittedAt));
+
+            Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+            Assert.That(request.Decisions, Is.Empty);
+        });
+    }
 }
