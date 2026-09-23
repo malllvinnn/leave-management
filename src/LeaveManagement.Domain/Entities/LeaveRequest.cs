@@ -106,7 +106,32 @@ public class LeaveRequest
         DateTimeOffset now
     )
     {
-        throw new NotImplementedException();
+        var approvalDecision = ApprovalDecision.Create(
+            requestId: Id,
+            actorId: approverId,
+            type: DecisionType.Approve,
+            stage: ApprovalStage.First,
+            reason: reason,
+            bypassedApproverId: null,
+            overrideOutcome: null,
+            decidedAt: now
+        );
+
+        if (approvalDecision.IsFailure)
+        {
+            var failureResult = Result.Fail(approvalDecision.Error);
+
+            return failureResult;
+        }
+
+        var decision = approvalDecision.Value;
+
+        _decisions.Add(decision);
+        Status = LeaveStatus.Approved;
+
+        var successResult = Result.Ok();
+
+        return successResult;
     }
 
     public Result ApproveFinalStage(
