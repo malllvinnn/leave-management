@@ -15,6 +15,9 @@ public class LeaveRequestTests
     private DateOnly _earlyMarchToday;
     private DateTimeOffset _submittedAtPlusSeven;
     private DateTimeOffset _submittedAtJustAfterNewYearUtcPlusSeven;
+    private EmployeeId _approverId;
+    private Reason _validApprovalReason;
+    private DateTimeOffset _firstApprovalAt;
 
     [SetUp]
     public void Setup()
@@ -47,6 +50,19 @@ public class LeaveRequestTests
             day: 1,
             hour: 0,
             minute: 30,
+            second: 0,
+            offset: TimeSpan.FromHours(7)
+        );
+
+        _approverId = EmployeeId.New();
+        _validApprovalReason = Reason.Create("Approved as scheduled").Value;
+
+        _firstApprovalAt = new DateTimeOffset(
+            year: 2026,
+            month: 3,
+            day: 2,
+            hour: 10,
+            minute: 0,
             second: 0,
             offset: TimeSpan.FromHours(7)
         );
@@ -397,6 +413,129 @@ public class LeaveRequestTests
             Assert.That(result.IsSuccess, Is.False);
             Assert.That(result.IsFailure, Is.True);
             Assert.That(result.Error, Is.EqualTo("Leave request must be within the current calendar year"));
+        });
+    }
+
+    [TestCase(1)]
+    [TestCase(5)]
+    [TestCase(6)]
+    [TestCase(10)]
+    public void ApproveFirstStage_WithSingleStageRoute_ReturnsApprovedRequestWithFirstStageDecision(int workingDays)
+    {
+        // Arrange
+        var endDay = workingDays switch
+        {
+            1 => 16,
+            5 => 20,
+            6 => 23,
+            10 => 27,
+            _ => throw new ArgumentOutOfRangeException(nameof(workingDays))
+        };
+
+        var period = DateRange.Create(
+            start: new DateOnly(2026, 3, 16),
+            end: new DateOnly(2026, 3, endDay)
+        ).Value;
+
+        var requestedWorkingDays = LeaveDays.Create(workingDays).Value;
+
+        var allocation = LeaveAllocation.Create(
+            annual: requestedWorkingDays,
+            carryOver: LeaveDays.Zero
+        ).Value;
+
+        var createResult = LeaveRequest.Create(
+            employeeId: _employeeId,
+            period: period,
+            workingDays: requestedWorkingDays,
+            allocation: allocation,
+            type: _annualType,
+            reason: _validReason,
+            today: _earlyMarchToday,
+            submittedAt: _submittedAtPlusSeven
+        );
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        // Act
+        var result = request.ApproveFirstStage(
+            approverId: _approverId,
+            requiresFinalApproval: false,
+            reason: _validApprovalReason,
+            now: _firstApprovalAt
+        );
+
+        // Assert
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(request.Decisions, Has.Count.EqualTo(1));
+
+        var decision = request.Decisions.Single();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(request.Status, Is.EqualTo(LeaveStatus.Approved));
+            Assert.That(decision.Type, Is.EqualTo(DecisionType.Approve));
+            Assert.That(decision.Stage, Is.EqualTo(ApprovalStage.First));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void ApproveFirstStage_WithOptionalReason_PreservesDecisionReason(bool hasReason)
+    {
+        // Arrange
+        var period = DateRange.Create(
+            start: new DateOnly(2026, 3, 16),
+            end: new DateOnly(2026, 3, 20)
+        ).Value;
+
+        var allocation = LeaveAllocation.Create(
+            annual: LeaveDays.Create(5).Value,
+            carryOver: LeaveDays.Zero
+        ).Value;
+
+        Reason? approvalReason = hasReason ? _validApprovalReason : null;
+
+        var createResult = LeaveRequest.Create(
+            employeeId: _employeeId,
+            period: period,
+            workingDays: _fiveWorkingDays,
+            allocation: allocation,
+            type: _annualType,
+            reason: _validReason,
+            today: _earlyMarchToday,
+            submittedAt: _submittedAtPlusSeven
+        );
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        // Act
+        var result = request.ApproveFirstStage(
+            approverId: _approverId,
+            requiresFinalApproval: false,
+            reason: approvalReason,
+            now: _firstApprovalAt
+        );
+
+        // Assert
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(request.Decisions, Has.Count.EqualTo(1));
+
+        var decision = request.Decisions.Single();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(decision.Reason, Is.EqualTo(approvalReason));
         });
     }
 }
