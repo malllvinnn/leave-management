@@ -18,6 +18,8 @@ public class LeaveRequestTests
     private EmployeeId _approverId;
     private Reason _validApprovalReason;
     private DateTimeOffset _firstApprovalAt;
+    private DateTimeOffset _finalApprovalAt;
+    private Reason _validApprovalFinalReason;
 
     [SetUp]
     public void Setup()
@@ -66,6 +68,18 @@ public class LeaveRequestTests
             second: 0,
             offset: TimeSpan.FromHours(7)
         );
+
+        _finalApprovalAt = new DateTimeOffset(
+            year: 2026,
+            month: 3,
+            day: 3,
+            hour: 10,
+            minute: 0,
+            second: 0,
+            offset: TimeSpan.FromHours(7)
+        );
+
+        _validApprovalFinalReason = Reason.Create("Final approval granted").Value;
     }
 
     [Test]
@@ -885,6 +899,83 @@ public class LeaveRequestTests
             Assert.That(request.Decisions[0].OverrideOutcome, Is.EqualTo(originalDecisionOverrideOutcome));
             Assert.That(request.Decisions[0].DecidedAt, Is.EqualTo(originalDecisionDecidedAt));
             Assert.That(request.Decisions[0].DecidedAt.Offset, Is.EqualTo(originalDecisionDecidedAtOffset));
+        });
+    }
+
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public void ApproveFinalStage_WhenAwaitingFinalApproval_ReturnsApprovedRequestWithFinalStageDecision(
+        bool hasReason,
+        bool sameApprover
+    )
+    {
+        // Arrange
+        var period = DateRange.Create(
+            start: new DateOnly(2026, 3, 16),
+            end: new DateOnly(2026, 3, 23)
+        ).Value;
+
+        var workingDays = LeaveDays.Create(6).Value;
+
+        var allocation = LeaveAllocation.Create(
+            annual: workingDays,
+            carryOver: LeaveDays.Zero
+        ).Value;
+
+        var createResult = LeaveRequest.Create(
+            employeeId: _employeeId,
+            period: period,
+            workingDays: workingDays,
+            allocation: allocation,
+            type: _annualType,
+            reason: _validReason,
+            today: _earlyMarchToday,
+            submittedAt: _submittedAtPlusSeven
+        );
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        var approveFirstStageResult = request.ApproveFirstStage(
+            approverId: _approverId,
+            requiresFinalApproval: true,
+            reason: _validApprovalReason,
+            now: _firstApprovalAt
+        );
+
+        Assert.That(approveFirstStageResult.IsSuccess, Is.True);
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.PendingFinalApproval));
+        Assert.That(request.Decisions, Has.Count.EqualTo(1));
+
+        Reason? finalReason = hasReason ? _validApprovalFinalReason : null;
+        var finalApproverId = sameApprover ? _approverId : EmployeeId.New();
+
+        // Act
+        var result = request.ApproveFinalStage(
+            approverId: finalApproverId,
+            reason: finalReason,
+            now: _finalApprovalAt
+        );
+
+        // Assert
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(request.Decisions, Has.Count.EqualTo(2));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(request.Status, Is.EqualTo(LeaveStatus.Approved));
+            Assert.That(request.Decisions[1].Type, Is.EqualTo(DecisionType.Approve));
+            Assert.That(request.Decisions[1].Stage, Is.EqualTo(ApprovalStage.Final));
+            Assert.That(request.Decisions[1].Reason, Is.EqualTo(finalReason));
         });
     }
 }
