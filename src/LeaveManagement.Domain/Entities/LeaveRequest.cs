@@ -106,6 +106,20 @@ public class LeaveRequest
         DateTimeOffset now
     )
     {
+        if (approverId == EmployeeId)
+        {
+            var failureResult = Result.Fail("Approver cannot decide their own leave request");
+
+            return failureResult;
+        }
+
+        if (Status is not LeaveStatus.Pending)
+        {
+            var failureResult = Result.Fail("Leave request is not awaiting first stage approval");
+
+            return failureResult;
+        }
+
         if (requiresFinalApproval && WorkingDays.Value <= 5)
         {
             var failureResult = Result.Fail("Final approval cannot be required for requests of 5 working days or fewer");
