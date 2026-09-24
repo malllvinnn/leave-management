@@ -650,6 +650,7 @@ public class LeaveRequestTests
         var originalType = request.Type;
         var originalReason = request.Reason;
         var originalSubmittedAt = request.SubmittedAt;
+        var originalSubmittedAtOffset = request.SubmittedAt.Offset;
 
         // Act
         var result = request.ApproveFirstStage(
@@ -674,6 +675,7 @@ public class LeaveRequestTests
             Assert.That(request.Type, Is.EqualTo(originalType));
             Assert.That(request.Reason, Is.EqualTo(originalReason));
             Assert.That(request.SubmittedAt, Is.EqualTo(originalSubmittedAt));
+            Assert.That(request.SubmittedAt.Offset, Is.EqualTo(originalSubmittedAtOffset));
 
             Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
             Assert.That(request.Decisions, Is.Empty);
