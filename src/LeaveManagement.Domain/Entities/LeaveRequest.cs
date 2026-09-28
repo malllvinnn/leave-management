@@ -224,7 +224,35 @@ public class LeaveRequest
         DateTimeOffset now
     )
     {
-        throw new NotImplementedException();
+        var decisionStage = Status is LeaveStatus.Pending
+            ? ApprovalStage.First
+            : ApprovalStage.Final;
+
+        var approvalDecision = ApprovalDecision.Create(
+            requestId: Id,
+            actorId: actorId,
+            type: DecisionType.Reject,
+            stage: decisionStage,
+            reason: reason,
+            bypassedApproverId: null,
+            overrideOutcome: null,
+            decidedAt: now
+        );
+
+        if (approvalDecision.IsFailure)
+        {
+            var failureResult = Result.Fail(approvalDecision.Error);
+
+            return failureResult;
+        }
+
+        var decision = approvalDecision.Value;
+        _decisions.Add(decision);
+        Status = LeaveStatus.Rejected;
+
+        var successResult = Result.Ok();
+
+        return successResult;
     }
 
     public Result Cancel(
