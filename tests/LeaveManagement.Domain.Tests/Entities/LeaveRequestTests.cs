@@ -20,6 +20,9 @@ public class LeaveRequestTests
     private DateTimeOffset _firstApprovalAt;
     private DateTimeOffset _finalApprovalAt;
     private Reason _validApprovalFinalReason;
+    private EmployeeId _actorReject;
+    private Reason _validRejectionReason;
+    private DateTimeOffset _rejectionAt;
 
     [SetUp]
     public void Setup()
@@ -80,6 +83,18 @@ public class LeaveRequestTests
         );
 
         _validApprovalFinalReason = Reason.Create("Final approval granted").Value;
+        _actorReject = EmployeeId.New();
+        _validRejectionReason = Reason.Create("Request cannot be approved").Value;
+
+        _rejectionAt = new DateTimeOffset(
+            year: 2026,
+            month: 3,
+            day: 4,
+            hour: 10,
+            minute: 0,
+            second: 0,
+            offset: TimeSpan.FromHours(7)
+        );
     }
 
     [Test]
@@ -1219,6 +1234,90 @@ public class LeaveRequestTests
 
             Assert.That(request.Decisions[0].Id, Is.EqualTo(firstDecisionId));
             Assert.That(request.Decisions[1].Id, Is.EqualTo(finalDecisionId));
+        });
+    }
+
+    [TestCase(ApprovalStage.First)]
+    [TestCase(ApprovalStage.Final)]
+    public void Reject_WithValidReason_ReturnsRejectedRequestWithDecisionForCurrentStage(
+        ApprovalStage stage
+    )
+    {
+        // Arrange
+        var endPeriod = stage == ApprovalStage.First
+            ? new DateOnly(2026, 3, 20)
+            : new DateOnly(2026, 3, 23);
+
+        var period = DateRange.Create(
+            start: new DateOnly(2026, 3, 16),
+            end: endPeriod
+        ).Value;
+
+        var workingDays = stage == ApprovalStage.First
+            ? LeaveDays.Create(5).Value
+            : LeaveDays.Create(6).Value;
+
+        var allocation = LeaveAllocation.Create(
+            annual: workingDays,
+            carryOver: LeaveDays.Zero
+        ).Value;
+
+        var createResult = LeaveRequest.Create(
+            employeeId: _employeeId,
+            period: period,
+            workingDays: workingDays,
+            allocation: allocation,
+            type: _annualType,
+            reason: _validReason,
+            today: _earlyMarchToday,
+            submittedAt: _submittedAtPlusSeven
+        );
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        if (stage == ApprovalStage.Final)
+        {
+            var approvalFirstStageResult = request.ApproveFirstStage(
+                approverId: _approverId,
+                requiresFinalApproval: true,
+                reason: _validApprovalReason,
+                now: _firstApprovalAt
+            );
+
+            Assert.That(approvalFirstStageResult.IsSuccess, Is.True);
+            Assert.That(request.Status, Is.EqualTo(LeaveStatus.PendingFinalApproval));
+            Assert.That(request.Decisions, Has.Count.EqualTo(1));
+        }
+
+        // Act
+        var result = request.Reject(
+            actorId: _actorReject,
+            reason: _validRejectionReason,
+            now: _rejectionAt
+        );
+
+        // Assert
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(request.Decisions, Has.Count.EqualTo(
+            stage == ApprovalStage.First ? 1 : 2
+        ));
+
+        var decisionIndex = stage == ApprovalStage.First ? 0 : 1;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(request.Status, Is.EqualTo(LeaveStatus.Rejected));
+            Assert.That(request.Decisions[decisionIndex].Type, Is.EqualTo(DecisionType.Reject));
+            Assert.That(request.Decisions[decisionIndex].Stage, Is.EqualTo(stage));
+            Assert.That(request.Decisions[decisionIndex].Reason, Is.EqualTo(_validRejectionReason));
         });
     }
 }
