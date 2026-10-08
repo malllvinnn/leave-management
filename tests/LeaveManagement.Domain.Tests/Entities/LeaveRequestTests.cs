@@ -1,3 +1,4 @@
+using LeaveManagement.Domain.Common;
 using LeaveManagement.Domain.Entities;
 using LeaveManagement.Domain.Enums;
 using LeaveManagement.Domain.ValueObjects;
@@ -1244,34 +1245,7 @@ public class LeaveRequestTests
     )
     {
         // Arrange
-        var endPeriod = stage == ApprovalStage.First
-            ? new DateOnly(2026, 3, 20)
-            : new DateOnly(2026, 3, 23);
-
-        var period = DateRange.Create(
-            start: new DateOnly(2026, 3, 16),
-            end: endPeriod
-        ).Value;
-
-        var workingDays = stage == ApprovalStage.First
-            ? LeaveDays.Create(5).Value
-            : LeaveDays.Create(6).Value;
-
-        var allocation = LeaveAllocation.Create(
-            annual: workingDays,
-            carryOver: LeaveDays.Zero
-        ).Value;
-
-        var createResult = LeaveRequest.Create(
-            employeeId: _employeeId,
-            period: period,
-            workingDays: workingDays,
-            allocation: allocation,
-            type: _annualType,
-            reason: _validReason,
-            today: _earlyMarchToday,
-            submittedAt: _submittedAtPlusSeven
-        );
+        var createResult = CreatePendingRequestForStage(stage);
 
         Assert.That(createResult.IsSuccess, Is.True);
 
@@ -1319,5 +1293,238 @@ public class LeaveRequestTests
             Assert.That(request.Decisions[decisionIndex].Stage, Is.EqualTo(stage));
             Assert.That(request.Decisions[decisionIndex].Reason, Is.EqualTo(_validRejectionReason));
         });
+    }
+
+    [TestCase(ApprovalStage.First)]
+    [TestCase(ApprovalStage.Final)]
+    public void Reject_WithNullReason_ReturnsFailedResultWithoutChangingRequest(
+        ApprovalStage stage
+    )
+    {
+        // Arrange
+        var createResult = CreatePendingRequestForStage(stage);
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        if (stage == ApprovalStage.Final)
+        {
+            var approvalFirstStageResult = request.ApproveFirstStage(
+                approverId: _approverId,
+                requiresFinalApproval: true,
+                reason: _validApprovalReason,
+                now: _firstApprovalAt
+            );
+
+            Assert.That(approvalFirstStageResult.IsSuccess, Is.True);
+            Assert.That(request.Status, Is.EqualTo(LeaveStatus.PendingFinalApproval));
+            Assert.That(request.Decisions, Has.Count.EqualTo(1));
+        }
+
+        Guid? firstDecisionId = stage == ApprovalStage.Final
+            ? request.Decisions[0].Id
+            : null;
+
+        // Act
+        var result = request.Reject(
+            actorId: _actorReject,
+            reason: null,
+            now: _rejectionAt
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Rejection reason cannot be empty"));
+
+            Assert.That(request.Status, Is.EqualTo(
+                stage == ApprovalStage.First
+                    ? LeaveStatus.Pending
+                    : LeaveStatus.PendingFinalApproval
+            ));
+
+            Assert.That(request.Decisions, Has.Count.EqualTo(
+                stage == ApprovalStage.First ? 0 : 1
+            ));
+
+            if (stage == ApprovalStage.Final)
+            {
+                Assert.That(request.Decisions[0].Id, Is.EqualTo(firstDecisionId));
+            }
+        });
+    }
+
+    [TestCase(ApprovalStage.First)]
+    [TestCase(ApprovalStage.Final)]
+    public void Reject_ByRequester_ReturnsFailedResultWithoutChangingRequest(
+        ApprovalStage stage
+    )
+    {
+        // Arrange
+        var createResult = CreatePendingRequestForStage(stage);
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        if (stage == ApprovalStage.Final)
+        {
+            var approvalFirstStageResult = request.ApproveFirstStage(
+                approverId: _approverId,
+                requiresFinalApproval: true,
+                reason: _validApprovalReason,
+                now: _firstApprovalAt
+            );
+
+            Assert.That(approvalFirstStageResult.IsSuccess, Is.True);
+            Assert.That(request.Status, Is.EqualTo(LeaveStatus.PendingFinalApproval));
+            Assert.That(request.Decisions, Has.Count.EqualTo(1));
+        }
+
+        Guid? firstDecisionId = stage == ApprovalStage.Final
+            ? request.Decisions[0].Id
+            : null;
+
+        // Act
+        var result = request.Reject(
+            actorId: request.EmployeeId,
+            reason: _validRejectionReason,
+            now: _rejectionAt
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Approver cannot decide their own leave request"));
+
+            Assert.That(request.Status, Is.EqualTo(
+                stage == ApprovalStage.First
+                    ? LeaveStatus.Pending
+                    : LeaveStatus.PendingFinalApproval
+            ));
+
+            Assert.That(request.Decisions, Has.Count.EqualTo(
+                stage == ApprovalStage.First ? 0 : 1
+            ));
+
+            if (stage == ApprovalStage.Final)
+            {
+                Assert.That(request.Decisions[0].Id, Is.EqualTo(firstDecisionId));
+            }
+        });
+    }
+
+    [TestCase(LeaveStatus.Approved)]
+    [TestCase(LeaveStatus.Rejected)]
+    public void Reject_WhenAlreadyDecided_ReturnsFailedResultWithoutChangingRequest(LeaveStatus initialStatus)
+    {
+        // Arrange
+        var createResult = CreatePendingRequestForStage(ApprovalStage.First);
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        if (initialStatus == LeaveStatus.Approved)
+        {
+            var approveFirstStageResult = request.ApproveFirstStage(
+                approverId: _approverId,
+                requiresFinalApproval: false,
+                reason: _validApprovalReason,
+                now: _firstApprovalAt
+            );
+
+            Assert.That(approveFirstStageResult.IsSuccess, Is.True);
+        }
+        else
+        {
+            var rejectResult = request.Reject(
+                actorId: _actorReject,
+                reason: _validRejectionReason,
+                now: new DateTimeOffset(
+                    year: 2026,
+                    month: 3,
+                    day: 3,
+                    hour: 10,
+                    minute: 0,
+                    second: 0,
+                    offset: TimeSpan.FromHours(7)
+                )
+            );
+
+            Assert.That(rejectResult.IsSuccess, Is.True);
+        }
+
+        Assert.That(request.Status, Is.EqualTo(initialStatus));
+        Assert.That(request.Decisions, Has.Count.EqualTo(1));
+
+        var originalDecisionId = request.Decisions[0].Id;
+
+        // Act
+        var result = request.Reject(
+            actorId: _actorReject,
+            reason: _validRejectionReason,
+            now: _rejectionAt
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Leave request has already reached a final decision"));
+
+            Assert.That(request.Status, Is.EqualTo(initialStatus));
+            Assert.That(request.Decisions, Has.Count.EqualTo(1));
+            Assert.That(request.Decisions[0].Id, Is.EqualTo(originalDecisionId));
+        });
+    }
+
+    private Result<LeaveRequest> CreatePendingRequestForStage(ApprovalStage stage)
+    {
+        var endPeriod = stage == ApprovalStage.First
+            ? new DateOnly(2026, 3, 20)
+            : new DateOnly(2026, 3, 23);
+
+        var period = DateRange.Create(
+            start: new DateOnly(2026, 3, 16),
+            end: endPeriod
+        ).Value;
+
+        var workingDays = stage == ApprovalStage.First
+            ? LeaveDays.Create(5).Value
+            : LeaveDays.Create(6).Value;
+
+        var allocation = LeaveAllocation.Create(
+            annual: workingDays,
+            carryOver: LeaveDays.Zero
+        ).Value;
+
+        var createResult = LeaveRequest.Create(
+            employeeId: _employeeId,
+            period: period,
+            workingDays: workingDays,
+            allocation: allocation,
+            type: _annualType,
+            reason: _validReason,
+            today: _earlyMarchToday,
+            submittedAt: _submittedAtPlusSeven
+        );
+
+        return createResult;
     }
 }
