@@ -26,7 +26,7 @@ public class QuotaAdjustment
         Days = days;
         Reason = reason;
         AdjustedBy = adjustedBy;
-        AdjustedAt = adjustedAt;
+        AdjustedAt = adjustedAt.ToUniversalTime();
     }
 
     public static Result<QuotaAdjustment> Create(
