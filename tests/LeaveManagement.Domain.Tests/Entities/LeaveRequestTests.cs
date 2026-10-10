@@ -1604,6 +1604,43 @@ public class LeaveRequestTests
         });
     }
 
+    [TestCase(true)]
+    [TestCase(false)]
+    public void Cancel_WithOptionalReason_PreservesDecisionReason(bool hasReason)
+    {
+        // Arrange
+        var createResult = CreatePendingRequestForStage(ApprovalStage.First);
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        var cancellationReason = hasReason ? _validCancellationReason : null;
+
+        // Act
+        var result = request.Cancel(
+            actorId: request.EmployeeId,
+            today: new DateOnly(2026, 3, 15),
+            reason: cancellationReason,
+            now: _cancellationAt
+        );
+
+        // Assert
+        Assert.That(result.IsSuccess, Is.True);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(request.Decisions, Has.Count.EqualTo(1));
+            Assert.That(request.Decisions[0].Reason, Is.EqualTo(cancellationReason));
+        });
+    }
+
     private Result<LeaveRequest> CreatePendingRequestForStage(ApprovalStage stage)
     {
         var endPeriod = stage == ApprovalStage.First
