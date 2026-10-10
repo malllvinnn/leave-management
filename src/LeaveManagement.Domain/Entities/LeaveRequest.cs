@@ -276,6 +276,38 @@ public class LeaveRequest
         DateTimeOffset now
     )
     {
-        throw new NotImplementedException();
+        var decisionStage = Status switch
+        {
+            LeaveStatus.Pending => ApprovalStage.First,
+            LeaveStatus.PendingFinalApproval => ApprovalStage.Final,
+            LeaveStatus.Approved => _decisions[^1].Stage,
+            _ => throw new InvalidOperationException("Unexpected leave request status for cancellation")
+        };
+
+        var approvalDecision = ApprovalDecision.Create(
+            requestId: Id,
+            actorId: actorId,
+            type: DecisionType.Cancel,
+            stage: decisionStage,
+            reason: reason,
+            bypassedApproverId: null,
+            overrideOutcome: null,
+            decidedAt: now
+        );
+
+        if (approvalDecision.IsFailure)
+        {
+            var failureResult = Result.Fail(approvalDecision.Error);
+
+            return failureResult;
+        }
+
+        var decision = approvalDecision.Value;
+        _decisions.Add(decision);
+        Status = LeaveStatus.Cancelled;
+
+        var successResult = Result.Ok();
+
+        return successResult;
     }
 }
