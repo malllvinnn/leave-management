@@ -276,6 +276,20 @@ public class LeaveRequest
         DateTimeOffset now
     )
     {
+        if (Status is not LeaveStatus.Pending and not LeaveStatus.PendingFinalApproval and not LeaveStatus.Approved)
+        {
+            var failureResult = Result.Fail("Leave request has already reached a final decision");
+
+            return failureResult;
+        }
+
+        if (today >= Period.Start)
+        {
+            var failureResult = Result.Fail("Leave request cannot be cancelled on or after its start date");
+
+            return failureResult;
+        }
+
         var decisionStage = Status switch
         {
             LeaveStatus.Pending => ApprovalStage.First,
