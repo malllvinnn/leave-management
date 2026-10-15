@@ -29,6 +29,7 @@ public class LeaveRequestTests
     private Reason _validOverrideReason;
     private EmployeeId _overrideActorId;
     private DateTimeOffset _overrideAt;
+    private EmployeeId _validBypassedId;
 
     [SetUp]
     public void Setup()
@@ -126,6 +127,8 @@ public class LeaveRequestTests
             second: 0,
             offset: TimeSpan.FromHours(7)
         );
+
+        _validBypassedId = EmployeeId.New();
     }
 
     [Test]
@@ -1908,6 +1911,146 @@ public class LeaveRequestTests
             Assert.That(request.Decisions[decisionIndex].Reason, Is.EqualTo(_validOverrideReason));
             Assert.That(request.Decisions[decisionIndex].DecidedAt, Is.EqualTo(_overrideAt.ToUniversalTime()));
             Assert.That(request.Decisions[decisionIndex].DecidedAt.Offset, Is.EqualTo(TimeSpan.Zero));
+        });
+    }
+
+    [TestCase(ApprovalStage.First, null)]
+    [TestCase(ApprovalStage.First, "123456789")]
+    [TestCase(ApprovalStage.Final, null)]
+    [TestCase(ApprovalStage.Final, "123456789")]
+    public void Override_WithMissingOrShortReason_ReturnsFailedResultWithoutChangingRequest(
+        ApprovalStage stage,
+        string? rawReason
+    )
+    {
+        // Arrange
+        var createResult = CreatePendingRequestForStage(stage);
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        if (stage == ApprovalStage.Final)
+        {
+            var approveFirstStageResult = request.ApproveFirstStage(
+                approverId: _approverId,
+                requiresFinalApproval: true,
+                reason: _validApprovalReason,
+                now: _firstApprovalAt
+            );
+
+            Assert.That(approveFirstStageResult.IsSuccess, Is.True);
+            Assert.That(request.Status, Is.EqualTo(LeaveStatus.PendingFinalApproval));
+            Assert.That(request.Decisions, Has.Count.EqualTo(1));
+        }
+
+        Guid? firstDecisionId = stage == ApprovalStage.Final ? request.Decisions[0].Id : null;
+
+        Reason? reason = rawReason is null
+            ? null
+            : Reason.Create(rawReason).Value;
+
+        // Act
+        var result = request.Override(
+            actorId: _overrideActorId,
+            bypassedApproverId: _validBypassedId,
+            outcome: DecisionType.Approve,
+            reason: reason,
+            now: _overrideAt
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Override reason must be at least 10 characters"));
+
+            Assert.That(request.Status, Is.EqualTo(
+                stage == ApprovalStage.First
+                    ? LeaveStatus.Pending
+                    : LeaveStatus.PendingFinalApproval
+            ));
+
+            Assert.That(request.Decisions, Has.Count.EqualTo(
+                stage == ApprovalStage.First ? 0 : 1
+            ));
+
+            if (stage == ApprovalStage.Final)
+            {
+                Assert.That(request.Decisions[0].Id, Is.EqualTo(firstDecisionId));
+            }
+        });
+    }
+
+    [TestCase(ApprovalStage.First, DecisionType.Cancel)]
+    [TestCase(ApprovalStage.First, DecisionType.Override)]
+    [TestCase(ApprovalStage.Final, DecisionType.Cancel)]
+    [TestCase(ApprovalStage.Final, DecisionType.Override)]
+    public void Override_WithInvalidOutcome_ReturnsFailedResultWithoutChangingRequest(
+        ApprovalStage stage,
+        DecisionType outcome
+    )
+    {
+        // Arrange
+        var createResult = CreatePendingRequestForStage(stage);
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        if (stage == ApprovalStage.Final)
+        {
+            var approveFirstStageResult = request.ApproveFirstStage(
+                approverId: _approverId,
+                requiresFinalApproval: true,
+                reason: _validApprovalReason,
+                now: _firstApprovalAt
+            );
+
+            Assert.That(approveFirstStageResult.IsSuccess, Is.True);
+            Assert.That(request.Status, Is.EqualTo(LeaveStatus.PendingFinalApproval));
+            Assert.That(request.Decisions, Has.Count.EqualTo(1));
+        }
+
+        Guid? firstDecisionId = stage == ApprovalStage.Final ? request.Decisions[0].Id : null;
+
+        // Act
+        var result = request.Override(
+            actorId: _overrideActorId,
+            bypassedApproverId: _validBypassedId,
+            outcome: outcome,
+            reason: _validOverrideReason,
+            now: _overrideAt
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Override outcome must be approve or reject"));
+
+            Assert.That(request.Status, Is.EqualTo(
+                stage == ApprovalStage.First
+                    ? LeaveStatus.Pending
+                    : LeaveStatus.PendingFinalApproval
+            ));
+
+            Assert.That(request.Decisions, Has.Count.EqualTo(
+                stage == ApprovalStage.First ? 0 : 1
+            ));
+
+            if (stage == ApprovalStage.Final)
+            {
+                Assert.That(request.Decisions[0].Id, Is.EqualTo(firstDecisionId));
+            }
         });
     }
 
