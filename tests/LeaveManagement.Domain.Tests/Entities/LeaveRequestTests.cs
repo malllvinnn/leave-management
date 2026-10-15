@@ -30,6 +30,7 @@ public class LeaveRequestTests
     private EmployeeId _overrideActorId;
     private DateTimeOffset _overrideAt;
     private EmployeeId _validBypassedId;
+    private DateTimeOffset _thirdMarchAt;
 
     [SetUp]
     public void Setup()
@@ -129,6 +130,16 @@ public class LeaveRequestTests
         );
 
         _validBypassedId = EmployeeId.New();
+
+        _thirdMarchAt = new DateTimeOffset(
+            year: 2026,
+            month: 3,
+            day: 3,
+            hour: 10,
+            minute: 0,
+            second: 0,
+            offset: TimeSpan.FromHours(7)
+        );
     }
 
     [Test]
@@ -2136,16 +2147,6 @@ public class LeaveRequestTests
         Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
         Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
-        var thirdMarchAt = new DateTimeOffset(
-            year: 2026,
-            month: 3,
-            day: 3,
-            hour: 10,
-            minute: 0,
-            second: 0,
-            offset: TimeSpan.FromHours(7)
-        );
-
         if (initialStatus == LeaveStatus.Approved)
         {
             var approveFirstStageResult = request.ApproveFirstStage(
@@ -2162,7 +2163,7 @@ public class LeaveRequestTests
             var rejectResult = request.Reject(
                 actorId: _actorReject,
                 reason: _validRejectionReason,
-                now: thirdMarchAt
+                now: _thirdMarchAt
             );
 
             Assert.That(rejectResult.IsSuccess, Is.True);
@@ -2173,7 +2174,7 @@ public class LeaveRequestTests
                 actorId: request.EmployeeId,
                 today: new DateOnly(2026, 3, 3),
                 reason: _validCancellationReason,
-                now: thirdMarchAt
+                now: _thirdMarchAt
             );
 
             Assert.That(cancelResult.IsSuccess, Is.True);
