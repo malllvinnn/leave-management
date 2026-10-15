@@ -215,6 +215,20 @@ public class LeaveRequest
         DateTimeOffset now
     )
     {
+        if (actorId == EmployeeId)
+        {
+            var failureResult = Result.Fail("Approver cannot decide their own leave request");
+
+            return failureResult;
+        }
+
+        if (Status is not LeaveStatus.Pending and not LeaveStatus.PendingFinalApproval)
+        {
+            var failureResult = Result.Fail("Leave request has already reached a final decision");
+
+            return failureResult;
+        }
+
         var decisionStage = Status is LeaveStatus.Pending
             ? ApprovalStage.First
             : ApprovalStage.Final;
