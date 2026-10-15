@@ -31,6 +31,8 @@ public class LeaveRequestTests
     private DateTimeOffset _overrideAt;
     private EmployeeId _validBypassedId;
     private DateTimeOffset _thirdMarchAt;
+    private DateTimeOffset _fourthMarchAt;
+    private DateOnly _thirdMarchToday;
 
     [SetUp]
     public void Setup()
@@ -140,6 +142,18 @@ public class LeaveRequestTests
             second: 0,
             offset: TimeSpan.FromHours(7)
         );
+
+        _fourthMarchAt = new DateTimeOffset(
+            year: 2026,
+            month: 3,
+            day: 4,
+            hour: 10,
+            minute: 0,
+            second: 0,
+            offset: TimeSpan.FromHours(7)
+        );
+
+        _thirdMarchToday = new DateOnly(2026, 3, 3);
     }
 
     [Test]
@@ -2202,6 +2216,192 @@ public class LeaveRequestTests
             Assert.That(result.Error, Is.EqualTo("Leave request has already reached a final decision"));
 
             Assert.That(request.Status, Is.EqualTo(initialStatus));
+            Assert.That(request.Decisions, Has.Count.EqualTo(1));
+            Assert.That(request.Decisions[0].Id, Is.EqualTo(originalDecisionId));
+        });
+    }
+
+    [TestCase(LeaveStatus.Rejected)]
+    [TestCase(LeaveStatus.Cancelled)]
+    public void ApproveFirstStage_WhenRejectedOrCancelled_ReturnsFailedResultWithoutChangingRequest(
+        LeaveStatus initialStatus
+    )
+    {
+        // Arrange
+        var createResult = CreatePendingRequestForStage(ApprovalStage.First);
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        if (initialStatus == LeaveStatus.Rejected)
+        {
+            var rejectResult = request.Reject(
+                actorId: _actorReject,
+                reason: _validRejectionReason,
+                now: _thirdMarchAt
+            );
+
+            Assert.That(rejectResult.IsSuccess, Is.True);
+        }
+        else
+        {
+            var cancelResult = request.Cancel(
+                actorId: request.EmployeeId,
+                today: _thirdMarchToday,
+                reason: _validCancellationReason,
+                now: _thirdMarchAt
+            );
+
+            Assert.That(cancelResult.IsSuccess, Is.True);
+        }
+
+        Assert.That(request.Status, Is.EqualTo(initialStatus));
+        Assert.That(request.Decisions, Has.Count.EqualTo(1));
+
+        Assert.That(request.Decisions[0].Type, Is.EqualTo(
+            initialStatus == LeaveStatus.Rejected
+                ? DecisionType.Reject
+                : DecisionType.Cancel
+        ));
+
+        var originalDecisionId = request.Decisions[0].Id;
+
+        // Act
+        var result = request.ApproveFirstStage(
+            approverId: _approverId,
+            requiresFinalApproval: false,
+            reason: _validApprovalReason,
+            now: _fourthMarchAt
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Leave request is not awaiting first stage approval"));
+
+            Assert.That(request.Status, Is.EqualTo(initialStatus));
+            Assert.That(request.Decisions, Has.Count.EqualTo(1));
+            Assert.That(request.Decisions[0].Id, Is.EqualTo(originalDecisionId));
+        });
+    }
+
+    [TestCase(LeaveStatus.Rejected)]
+    [TestCase(LeaveStatus.Cancelled)]
+    public void ApproveFinalStage_WhenRejectedOrCancelled_ReturnsFailedResultWithoutChangingRequest(
+        LeaveStatus initialStatus
+    )
+    {
+        // Arrange
+        var createResult = CreatePendingRequestForStage(ApprovalStage.First);
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        if (initialStatus == LeaveStatus.Rejected)
+        {
+            var rejectResult = request.Reject(
+                actorId: _actorReject,
+                reason: _validRejectionReason,
+                now: _thirdMarchAt
+            );
+
+            Assert.That(rejectResult.IsSuccess, Is.True);
+        }
+        else
+        {
+            var cancelResult = request.Cancel(
+                actorId: request.EmployeeId,
+                today: _thirdMarchToday,
+                reason: _validCancellationReason,
+                now: _thirdMarchAt
+            );
+
+            Assert.That(cancelResult.IsSuccess, Is.True);
+        }
+
+        Assert.That(request.Status, Is.EqualTo(initialStatus));
+        Assert.That(request.Decisions, Has.Count.EqualTo(1));
+
+        Assert.That(request.Decisions[0].Type, Is.EqualTo(
+            initialStatus == LeaveStatus.Rejected
+                ? DecisionType.Reject
+                : DecisionType.Cancel
+        ));
+
+        var originalDecisionId = request.Decisions[0].Id;
+
+        // Act
+        var result = request.ApproveFinalStage(
+            approverId: _approverId,
+            reason: _validApprovalFinalReason,
+            now: _fourthMarchAt
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Leave request is not awaiting final approval"));
+
+            Assert.That(request.Status, Is.EqualTo(initialStatus));
+            Assert.That(request.Decisions, Has.Count.EqualTo(1));
+            Assert.That(request.Decisions[0].Id, Is.EqualTo(originalDecisionId));
+        });
+    }
+
+    [Test]
+    public void Reject_WhenCancelled_ReturnsFailedResultWithoutChangingRequest()
+    {
+        // Arrange
+        var createResult = CreatePendingRequestForStage(ApprovalStage.First);
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        var cancelResult = request.Cancel(
+            actorId: request.EmployeeId,
+            today: _thirdMarchToday,
+            reason: _validCancellationReason,
+            now: _thirdMarchAt
+        );
+
+        Assert.That(cancelResult.IsSuccess, Is.True);
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Cancelled));
+        Assert.That(request.Decisions, Has.Count.EqualTo(1));
+        Assert.That(request.Decisions[0].Type, Is.EqualTo(DecisionType.Cancel));
+
+        var originalDecisionId = request.Decisions[0].Id;
+
+        // Act
+        var result = request.Reject(
+            actorId: _approverId,
+            reason: _validRejectionReason,
+            now: _fourthMarchAt
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Leave request has already reached a final decision"));
+
+            Assert.That(request.Status, Is.EqualTo(LeaveStatus.Cancelled));
             Assert.That(request.Decisions, Has.Count.EqualTo(1));
             Assert.That(request.Decisions[0].Id, Is.EqualTo(originalDecisionId));
         });
