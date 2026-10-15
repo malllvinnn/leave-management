@@ -2054,6 +2054,158 @@ public class LeaveRequestTests
         });
     }
 
+    [TestCase(ApprovalStage.First)]
+    [TestCase(ApprovalStage.Final)]
+    public void Override_ByRequester_ReturnsFailedResultWithoutChangingRequest(
+        ApprovalStage stage
+    )
+    {
+        // Arrange
+        var createResult = CreatePendingRequestForStage(stage);
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        if (stage == ApprovalStage.Final)
+        {
+            var approveFirstStageResult = request.ApproveFirstStage(
+                approverId: _approverId,
+                requiresFinalApproval: true,
+                reason: _validApprovalReason,
+                now: _firstApprovalAt
+            );
+
+            Assert.That(approveFirstStageResult.IsSuccess, Is.True);
+            Assert.That(request.Status, Is.EqualTo(LeaveStatus.PendingFinalApproval));
+            Assert.That(request.Decisions, Has.Count.EqualTo(1));
+        }
+
+        Guid? firstDecisionId = stage == ApprovalStage.Final ? request.Decisions[0].Id : null;
+
+        // Act
+        var result = request.Override(
+            actorId: request.EmployeeId,
+            bypassedApproverId: _validBypassedId,
+            outcome: DecisionType.Approve,
+            reason: _validOverrideReason,
+            now: _overrideAt
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Approver cannot decide their own leave request"));
+
+            Assert.That(request.Status, Is.EqualTo(
+                stage == ApprovalStage.First
+                    ? LeaveStatus.Pending
+                    : LeaveStatus.PendingFinalApproval
+            ));
+
+            Assert.That(request.Decisions, Has.Count.EqualTo(
+                stage == ApprovalStage.First ? 0 : 1
+            ));
+
+            if (stage == ApprovalStage.Final)
+            {
+                Assert.That(request.Decisions[0].Id, Is.EqualTo(firstDecisionId));
+            }
+        });
+    }
+
+    [TestCase(LeaveStatus.Approved)]
+    [TestCase(LeaveStatus.Rejected)]
+    [TestCase(LeaveStatus.Cancelled)]
+    public void Override_WhenAlreadyDecided_ReturnsFailedResultWithoutChangingRequest(
+        LeaveStatus initialStatus
+    )
+    {
+        // Arrange
+        var createResult = CreatePendingRequestForStage(ApprovalStage.First);
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        var thirdMarchAt = new DateTimeOffset(
+            year: 2026,
+            month: 3,
+            day: 3,
+            hour: 10,
+            minute: 0,
+            second: 0,
+            offset: TimeSpan.FromHours(7)
+        );
+
+        if (initialStatus == LeaveStatus.Approved)
+        {
+            var approveFirstStageResult = request.ApproveFirstStage(
+                approverId: _approverId,
+                requiresFinalApproval: false,
+                reason: _validApprovalReason,
+                now: _firstApprovalAt
+            );
+
+            Assert.That(approveFirstStageResult.IsSuccess, Is.True);
+        }
+        else if (initialStatus == LeaveStatus.Rejected)
+        {
+            var rejectResult = request.Reject(
+                actorId: _actorReject,
+                reason: _validRejectionReason,
+                now: thirdMarchAt
+            );
+
+            Assert.That(rejectResult.IsSuccess, Is.True);
+        }
+        else
+        {
+            var cancelResult = request.Cancel(
+                actorId: request.EmployeeId,
+                today: new DateOnly(2026, 3, 3),
+                reason: _validCancellationReason,
+                now: thirdMarchAt
+            );
+
+            Assert.That(cancelResult.IsSuccess, Is.True);
+        }
+
+        Assert.That(request.Status, Is.EqualTo(initialStatus));
+        Assert.That(request.Decisions, Has.Count.EqualTo(1));
+
+        var originalDecisionId = request.Decisions[0].Id;
+
+        // Act
+        var result = request.Override(
+            actorId: _overrideActorId,
+            bypassedApproverId: _validBypassedId,
+            outcome: DecisionType.Approve,
+            reason: _validOverrideReason,
+            now: _overrideAt
+        );
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Error, Is.EqualTo("Leave request has already reached a final decision"));
+
+            Assert.That(request.Status, Is.EqualTo(initialStatus));
+            Assert.That(request.Decisions, Has.Count.EqualTo(1));
+            Assert.That(request.Decisions[0].Id, Is.EqualTo(originalDecisionId));
+        });
+    }
+
     private Result<LeaveRequest> CreatePendingRequestForStage(ApprovalStage stage)
     {
         var endPeriod = stage == ApprovalStage.First
