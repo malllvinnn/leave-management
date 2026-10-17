@@ -2798,6 +2798,191 @@ public class LeaveRequestTests
         });
     }
 
+    [Test]
+    public void ApproveFirstStage_WithValidContext_PreservesDecisionContext()
+    {
+        // Arrange
+        var createResult = CreatePendingRequestForStage(ApprovalStage.First);
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        // Act
+        var result = request.ApproveFirstStage(
+            approverId: _approverId,
+            requiresFinalApproval: false,
+            reason: _validApprovalReason,
+            now: _firstApprovalAt
+        );
+
+        // Assert
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(request.Decisions, Has.Count.EqualTo(1));
+
+        var decision = request.Decisions[0];
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(decision.Id, Is.Not.EqualTo(Guid.Empty));
+            Assert.That(decision.LeaveRequestId, Is.EqualTo(request.Id));
+            Assert.That(decision.ActorId, Is.EqualTo(_approverId));
+            Assert.That(decision.Reason, Is.EqualTo(_validApprovalReason));
+            Assert.That(decision.BypassedApproverId, Is.EqualTo(null));
+            Assert.That(decision.OverrideOutcome, Is.EqualTo(null));
+            Assert.That(decision.DecidedAt, Is.EqualTo(_firstApprovalAt.ToUniversalTime()));
+            Assert.That(decision.DecidedAt.Offset, Is.EqualTo(TimeSpan.Zero));
+        });
+    }
+
+    [Test]
+    public void ApproveFinalStage_WithValidContext_PreservesDecisionContext()
+    {
+        // Arrange
+        var createResult = CreatePendingRequestForStage(ApprovalStage.Final);
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        var approveFirstStageResult = request.ApproveFirstStage(
+            approverId: _approverId,
+            requiresFinalApproval: true,
+            reason: _validApprovalReason,
+            now: _firstApprovalAt
+        );
+
+        Assert.That(approveFirstStageResult.IsSuccess, Is.True);
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.PendingFinalApproval));
+        Assert.That(request.Decisions, Has.Count.EqualTo(1));
+
+        var finalActorId = EmployeeId.New();
+
+        // Act
+        var result = request.ApproveFinalStage(
+            approverId: finalActorId,
+            reason: _validApprovalFinalReason,
+            now: _finalApprovalAt
+        );
+
+        // Assert
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(request.Decisions, Has.Count.EqualTo(2));
+
+        var decision = request.Decisions[1];
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(decision.Id, Is.Not.EqualTo(Guid.Empty));
+            Assert.That(decision.LeaveRequestId, Is.EqualTo(request.Id));
+            Assert.That(decision.ActorId, Is.EqualTo(finalActorId));
+            Assert.That(decision.Reason, Is.EqualTo(_validApprovalFinalReason));
+            Assert.That(decision.BypassedApproverId, Is.EqualTo(null));
+            Assert.That(decision.OverrideOutcome, Is.EqualTo(null));
+            Assert.That(decision.DecidedAt, Is.EqualTo(_finalApprovalAt.ToUniversalTime()));
+            Assert.That(decision.DecidedAt.Offset, Is.EqualTo(TimeSpan.Zero));
+        });
+    }
+
+    [Test]
+    public void Reject_WithValidContext_PreservesDecisionContext()
+    {
+        // Arrange
+        var createResult = CreatePendingRequestForStage(ApprovalStage.First);
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        // Act
+        var result = request.Reject(
+            actorId: _actorReject,
+            reason: _validRejectionReason,
+            now: _rejectionAt
+        );
+
+        // Assert
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(request.Decisions, Has.Count.EqualTo(1));
+
+        var decision = request.Decisions[0];
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(decision.Id, Is.Not.EqualTo(Guid.Empty));
+            Assert.That(decision.LeaveRequestId, Is.EqualTo(request.Id));
+            Assert.That(decision.ActorId, Is.EqualTo(_actorReject));
+            Assert.That(decision.Reason, Is.EqualTo(_validRejectionReason));
+            Assert.That(decision.BypassedApproverId, Is.EqualTo(null));
+            Assert.That(decision.OverrideOutcome, Is.EqualTo(null));
+            Assert.That(decision.DecidedAt, Is.EqualTo(_rejectionAt.ToUniversalTime()));
+            Assert.That(decision.DecidedAt.Offset, Is.EqualTo(TimeSpan.Zero));
+        });
+    }
+
+    [Test]
+    public void Cancel_WithValidContext_PreservesDecisionContext()
+    {
+        // Arrange
+        var createResult = CreatePendingRequestForStage(ApprovalStage.First);
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        var cancelToday = new DateOnly(2026, 3, 15);
+
+        // Act
+        var result = request.Cancel(
+            actorId: request.EmployeeId,
+            today: cancelToday,
+            reason: _validCancellationReason,
+            now: _cancellationAt
+        );
+
+        // Assert
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(request.Decisions, Has.Count.EqualTo(1));
+
+        var decision = request.Decisions[0];
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(decision.Id, Is.Not.EqualTo(Guid.Empty));
+            Assert.That(decision.LeaveRequestId, Is.EqualTo(request.Id));
+            Assert.That(decision.ActorId, Is.EqualTo(request.EmployeeId));
+            Assert.That(decision.Reason, Is.EqualTo(_validCancellationReason));
+            Assert.That(decision.BypassedApproverId, Is.EqualTo(null));
+            Assert.That(decision.OverrideOutcome, Is.EqualTo(null));
+            Assert.That(decision.DecidedAt, Is.EqualTo(_cancellationAt.ToUniversalTime()));
+            Assert.That(decision.DecidedAt.Offset, Is.EqualTo(TimeSpan.Zero));
+        });
+    }
+
     private Result<LeaveRequest> CreatePendingRequestForStage(ApprovalStage stage)
     {
         var endPeriod = stage == ApprovalStage.First
