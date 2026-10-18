@@ -206,7 +206,7 @@ public class LeaveRequestTests
             Assert.That(request.Reason, Is.EqualTo(reason));
 
             Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
-            Assert.That(request.Decisions, Is.Empty);
+            Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
             Assert.That(request.SubmittedAt, Is.EqualTo(submittedAt.ToUniversalTime()));
             Assert.That(request.SubmittedAt.Offset, Is.EqualTo(TimeSpan.Zero));
@@ -424,7 +424,7 @@ public class LeaveRequestTests
             Assert.That(request.SubmittedAt, Is.EqualTo(submittedAt.ToUniversalTime()));
             Assert.That(request.SubmittedAt.Offset, Is.EqualTo(TimeSpan.Zero));
 
-            Assert.That(request.Decisions, Is.Empty);
+            Assert.That(request.Decisions, Has.Count.EqualTo(0));
         });
     }
 
@@ -766,7 +766,7 @@ public class LeaveRequestTests
             Assert.That(request.SubmittedAt.Offset, Is.EqualTo(originalSubmittedAtOffset));
 
             Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
-            Assert.That(request.Decisions, Is.Empty);
+            Assert.That(request.Decisions, Has.Count.EqualTo(0));
         });
     }
 
@@ -800,7 +800,7 @@ public class LeaveRequestTests
         var request = createResult.Value;
 
         Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
-        Assert.That(request.Decisions, Is.Empty);
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
         var originalId = request.Id;
         var originalEmployeeId = request.EmployeeId;
@@ -839,7 +839,7 @@ public class LeaveRequestTests
             Assert.That(request.SubmittedAt.Offset, Is.EqualTo(originalSubmittedAtOffset));
 
             Assert.That(request.Status, Is.EqualTo(originalStatus));
-            Assert.That(request.Decisions, Is.Empty);
+            Assert.That(request.Decisions, Has.Count.EqualTo(0));
         });
     }
 
@@ -887,7 +887,7 @@ public class LeaveRequestTests
         var request = createResult.Value;
 
         Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
-        Assert.That(request.Decisions, Is.Empty);
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
         var approveFirstStageResult = request.ApproveFirstStage(
             approverId: _approverId,
@@ -1312,7 +1312,7 @@ public class LeaveRequestTests
         Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
         Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
-        if (stage == ApprovalStage.Final)
+        if (stage is ApprovalStage.Final)
         {
             var approvalFirstStageResult = request.ApproveFirstStage(
                 approverId: _approverId,
@@ -1336,10 +1336,10 @@ public class LeaveRequestTests
         // Assert
         Assert.That(result.IsSuccess, Is.True);
         Assert.That(request.Decisions, Has.Count.EqualTo(
-            stage == ApprovalStage.First ? 1 : 2
+            stage is ApprovalStage.First ? 1 : 2
         ));
 
-        var decisionIndex = stage == ApprovalStage.First ? 0 : 1;
+        var decisionIndex = stage is ApprovalStage.First ? 0 : 1;
 
         Assert.Multiple(() =>
         {
@@ -1369,7 +1369,7 @@ public class LeaveRequestTests
         Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
         Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
-        if (stage == ApprovalStage.Final)
+        if (stage is ApprovalStage.Final)
         {
             var approvalFirstStageResult = request.ApproveFirstStage(
                 approverId: _approverId,
@@ -1383,7 +1383,7 @@ public class LeaveRequestTests
             Assert.That(request.Decisions, Has.Count.EqualTo(1));
         }
 
-        Guid? firstDecisionId = stage == ApprovalStage.Final
+        Guid? firstDecisionId = stage is ApprovalStage.Final
             ? request.Decisions[0].Id
             : null;
 
@@ -1402,16 +1402,16 @@ public class LeaveRequestTests
             Assert.That(result.Error, Is.EqualTo("Rejection reason cannot be empty"));
 
             Assert.That(request.Status, Is.EqualTo(
-                stage == ApprovalStage.First
+                stage is ApprovalStage.First
                     ? LeaveStatus.Pending
                     : LeaveStatus.PendingFinalApproval
             ));
 
             Assert.That(request.Decisions, Has.Count.EqualTo(
-                stage == ApprovalStage.First ? 0 : 1
+                stage is ApprovalStage.First ? 0 : 1
             ));
 
-            if (stage == ApprovalStage.Final)
+            if (stage is ApprovalStage.Final)
             {
                 Assert.That(request.Decisions[0].Id, Is.EqualTo(firstDecisionId));
             }
@@ -1434,7 +1434,7 @@ public class LeaveRequestTests
         Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
         Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
-        if (stage == ApprovalStage.Final)
+        if (stage is ApprovalStage.Final)
         {
             var approvalFirstStageResult = request.ApproveFirstStage(
                 approverId: _approverId,
@@ -1448,7 +1448,7 @@ public class LeaveRequestTests
             Assert.That(request.Decisions, Has.Count.EqualTo(1));
         }
 
-        Guid? firstDecisionId = stage == ApprovalStage.Final
+        Guid? firstDecisionId = stage is ApprovalStage.Final
             ? request.Decisions[0].Id
             : null;
 
@@ -1467,16 +1467,16 @@ public class LeaveRequestTests
             Assert.That(result.Error, Is.EqualTo("Approver cannot decide their own leave request"));
 
             Assert.That(request.Status, Is.EqualTo(
-                stage == ApprovalStage.First
+                stage is ApprovalStage.First
                     ? LeaveStatus.Pending
                     : LeaveStatus.PendingFinalApproval
             ));
 
             Assert.That(request.Decisions, Has.Count.EqualTo(
-                stage == ApprovalStage.First ? 0 : 1
+                stage is ApprovalStage.First ? 0 : 1
             ));
 
-            if (stage == ApprovalStage.Final)
+            if (stage is ApprovalStage.Final)
             {
                 Assert.That(request.Decisions[0].Id, Is.EqualTo(firstDecisionId));
             }
@@ -1497,7 +1497,7 @@ public class LeaveRequestTests
         Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
         Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
-        if (initialStatus == LeaveStatus.Approved)
+        if (initialStatus is LeaveStatus.Approved)
         {
             var approveFirstStageResult = request.ApproveFirstStage(
                 approverId: _approverId,
@@ -1713,7 +1713,7 @@ public class LeaveRequestTests
         Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
         Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
-        if (initialStatus == LeaveStatus.PendingFinalApproval)
+        if (initialStatus is LeaveStatus.PendingFinalApproval)
         {
             var approveFirstStageResult = request.ApproveFirstStage(
                 approverId: _approverId,
@@ -1726,7 +1726,7 @@ public class LeaveRequestTests
             Assert.That(request.Status, Is.EqualTo(LeaveStatus.PendingFinalApproval));
             Assert.That(request.Decisions, Has.Count.EqualTo(1));
         }
-        else if (initialStatus == LeaveStatus.Approved)
+        else if (initialStatus is LeaveStatus.Approved)
         {
             var approveFirstStageResult = request.ApproveFirstStage(
                 approverId: _approverId,
@@ -1775,7 +1775,7 @@ public class LeaveRequestTests
 
             Assert.That(request.Status, Is.EqualTo(initialStatus));
             Assert.That(request.Decisions, Has.Count.EqualTo(
-                initialStatus == LeaveStatus.Pending ? 0 : 1
+                initialStatus is LeaveStatus.Pending ? 0 : 1
             ));
 
             if (originalDecisionId is not null)
@@ -1813,7 +1813,7 @@ public class LeaveRequestTests
 
         var stateToday = new DateOnly(2026, 3, 14);
 
-        if (initialStatus == LeaveStatus.Rejected)
+        if (initialStatus is LeaveStatus.Rejected)
         {
             var rejectResult = request.Reject(
                 actorId: _actorReject,
@@ -1885,7 +1885,7 @@ public class LeaveRequestTests
         Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
         Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
-        if (stage == ApprovalStage.Final)
+        if (stage is ApprovalStage.Final)
         {
             var approveFirstStageResult = request.ApproveFirstStage(
                 approverId: _approverId,
@@ -1913,10 +1913,10 @@ public class LeaveRequestTests
         // Assert
         Assert.That(result.IsSuccess, Is.True);
         Assert.That(request.Decisions, Has.Count.EqualTo(
-            stage == ApprovalStage.First ? 1 : 2
+            stage is ApprovalStage.First ? 1 : 2
         ));
 
-        var decisionIndex = stage == ApprovalStage.First ? 0 : 1;
+        var decisionIndex = stage is ApprovalStage.First ? 0 : 1;
 
         Assert.Multiple(() =>
         {
@@ -1924,7 +1924,7 @@ public class LeaveRequestTests
             Assert.That(result.Error, Is.Empty);
 
             Assert.That(request.Status, Is.EqualTo(
-                outcome == DecisionType.Approve ? LeaveStatus.Approved : LeaveStatus.Rejected
+                outcome is DecisionType.Approve ? LeaveStatus.Approved : LeaveStatus.Rejected
             ));
             Assert.That(request.Decisions[decisionIndex].Type, Is.EqualTo(DecisionType.Override));
             Assert.That(request.Decisions[decisionIndex].Stage, Is.EqualTo(stage));
@@ -1958,7 +1958,7 @@ public class LeaveRequestTests
         Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
         Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
-        if (stage == ApprovalStage.Final)
+        if (stage is ApprovalStage.Final)
         {
             var approveFirstStageResult = request.ApproveFirstStage(
                 approverId: _approverId,
@@ -1972,7 +1972,7 @@ public class LeaveRequestTests
             Assert.That(request.Decisions, Has.Count.EqualTo(1));
         }
 
-        Guid? firstDecisionId = stage == ApprovalStage.Final ? request.Decisions[0].Id : null;
+        Guid? firstDecisionId = stage is ApprovalStage.Final ? request.Decisions[0].Id : null;
 
         Reason? reason = rawReason is null
             ? null
@@ -1995,16 +1995,16 @@ public class LeaveRequestTests
             Assert.That(result.Error, Is.EqualTo("Override reason must be at least 10 characters"));
 
             Assert.That(request.Status, Is.EqualTo(
-                stage == ApprovalStage.First
+                stage is ApprovalStage.First
                     ? LeaveStatus.Pending
                     : LeaveStatus.PendingFinalApproval
             ));
 
             Assert.That(request.Decisions, Has.Count.EqualTo(
-                stage == ApprovalStage.First ? 0 : 1
+                stage is ApprovalStage.First ? 0 : 1
             ));
 
-            if (stage == ApprovalStage.Final)
+            if (stage is ApprovalStage.Final)
             {
                 Assert.That(request.Decisions[0].Id, Is.EqualTo(firstDecisionId));
             }
@@ -2030,7 +2030,7 @@ public class LeaveRequestTests
         Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
         Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
-        if (stage == ApprovalStage.Final)
+        if (stage is ApprovalStage.Final)
         {
             var approveFirstStageResult = request.ApproveFirstStage(
                 approverId: _approverId,
@@ -2044,7 +2044,7 @@ public class LeaveRequestTests
             Assert.That(request.Decisions, Has.Count.EqualTo(1));
         }
 
-        Guid? firstDecisionId = stage == ApprovalStage.Final ? request.Decisions[0].Id : null;
+        Guid? firstDecisionId = stage is ApprovalStage.Final ? request.Decisions[0].Id : null;
 
         // Act
         var result = request.Override(
@@ -2063,16 +2063,16 @@ public class LeaveRequestTests
             Assert.That(result.Error, Is.EqualTo("Override outcome must be approve or reject"));
 
             Assert.That(request.Status, Is.EqualTo(
-                stage == ApprovalStage.First
+                stage is ApprovalStage.First
                     ? LeaveStatus.Pending
                     : LeaveStatus.PendingFinalApproval
             ));
 
             Assert.That(request.Decisions, Has.Count.EqualTo(
-                stage == ApprovalStage.First ? 0 : 1
+                stage is ApprovalStage.First ? 0 : 1
             ));
 
-            if (stage == ApprovalStage.Final)
+            if (stage is ApprovalStage.Final)
             {
                 Assert.That(request.Decisions[0].Id, Is.EqualTo(firstDecisionId));
             }
@@ -2095,7 +2095,7 @@ public class LeaveRequestTests
         Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
         Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
-        if (stage == ApprovalStage.Final)
+        if (stage is ApprovalStage.Final)
         {
             var approveFirstStageResult = request.ApproveFirstStage(
                 approverId: _approverId,
@@ -2109,7 +2109,7 @@ public class LeaveRequestTests
             Assert.That(request.Decisions, Has.Count.EqualTo(1));
         }
 
-        Guid? firstDecisionId = stage == ApprovalStage.Final ? request.Decisions[0].Id : null;
+        Guid? firstDecisionId = stage is ApprovalStage.Final ? request.Decisions[0].Id : null;
 
         // Act
         var result = request.Override(
@@ -2128,16 +2128,16 @@ public class LeaveRequestTests
             Assert.That(result.Error, Is.EqualTo("Approver cannot decide their own leave request"));
 
             Assert.That(request.Status, Is.EqualTo(
-                stage == ApprovalStage.First
+                stage is ApprovalStage.First
                     ? LeaveStatus.Pending
                     : LeaveStatus.PendingFinalApproval
             ));
 
             Assert.That(request.Decisions, Has.Count.EqualTo(
-                stage == ApprovalStage.First ? 0 : 1
+                stage is ApprovalStage.First ? 0 : 1
             ));
 
-            if (stage == ApprovalStage.Final)
+            if (stage is ApprovalStage.Final)
             {
                 Assert.That(request.Decisions[0].Id, Is.EqualTo(firstDecisionId));
             }
@@ -2161,7 +2161,7 @@ public class LeaveRequestTests
         Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
         Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
-        if (initialStatus == LeaveStatus.Approved)
+        if (initialStatus is LeaveStatus.Approved)
         {
             var approveFirstStageResult = request.ApproveFirstStage(
                 approverId: _approverId,
@@ -2172,7 +2172,7 @@ public class LeaveRequestTests
 
             Assert.That(approveFirstStageResult.IsSuccess, Is.True);
         }
-        else if (initialStatus == LeaveStatus.Rejected)
+        else if (initialStatus is LeaveStatus.Rejected)
         {
             var rejectResult = request.Reject(
                 actorId: _actorReject,
@@ -2237,7 +2237,7 @@ public class LeaveRequestTests
         Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
         Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
-        if (initialStatus == LeaveStatus.Rejected)
+        if (initialStatus is LeaveStatus.Rejected)
         {
             var rejectResult = request.Reject(
                 actorId: _actorReject,
@@ -2263,7 +2263,7 @@ public class LeaveRequestTests
         Assert.That(request.Decisions, Has.Count.EqualTo(1));
 
         Assert.That(request.Decisions[0].Type, Is.EqualTo(
-            initialStatus == LeaveStatus.Rejected
+            initialStatus is LeaveStatus.Rejected
                 ? DecisionType.Reject
                 : DecisionType.Cancel
         ));
@@ -2307,7 +2307,7 @@ public class LeaveRequestTests
         Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
         Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
-        if (initialStatus == LeaveStatus.Rejected)
+        if (initialStatus is LeaveStatus.Rejected)
         {
             var rejectResult = request.Reject(
                 actorId: _actorReject,
@@ -2333,7 +2333,7 @@ public class LeaveRequestTests
         Assert.That(request.Decisions, Has.Count.EqualTo(1));
 
         Assert.That(request.Decisions[0].Type, Is.EqualTo(
-            initialStatus == LeaveStatus.Rejected
+            initialStatus is LeaveStatus.Rejected
                 ? DecisionType.Reject
                 : DecisionType.Cancel
         ));
@@ -2739,7 +2739,7 @@ public class LeaveRequestTests
         Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
         Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
-        if (initialStatus == LeaveStatus.Rejected)
+        if (initialStatus is LeaveStatus.Rejected)
         {
             var rejectResult = request.Reject(
                 actorId: _approverId,
@@ -3106,7 +3106,7 @@ public class LeaveRequestTests
             Assert.That(request.SubmittedAt, Is.EqualTo(originalSubmittedAt));
             Assert.That(request.SubmittedAt.Offset, Is.EqualTo(originalSubmittedAtOffset));
 
-            for (int i = 0; i < originalDecisionCount; i++)
+            for (var i = 0; i < originalDecisionCount; i++)
             {
                 var originalDecision = originalDecisions[i];
                 var currentDecision = request.Decisions[i];
@@ -3141,7 +3141,7 @@ public class LeaveRequestTests
         Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
         Assert.That(request.Decisions, Has.Count.EqualTo(0));
 
-        if (stage == ApprovalStage.Final)
+        if (stage is ApprovalStage.Final)
         {
             var approveFirstStageResult = request.ApproveFirstStage(
                 approverId: _approverId,
@@ -3472,7 +3472,7 @@ public class LeaveRequestTests
 
     private Result<LeaveRequest> CreatePendingRequestForStage(ApprovalStage stage)
     {
-        var endPeriod = stage == ApprovalStage.First
+        var endPeriod = stage is ApprovalStage.First
             ? new DateOnly(2026, 3, 20)
             : new DateOnly(2026, 3, 23);
 
@@ -3481,7 +3481,7 @@ public class LeaveRequestTests
             end: endPeriod
         ).Value;
 
-        var workingDays = stage == ApprovalStage.First
+        var workingDays = stage is ApprovalStage.First
             ? LeaveDays.Create(5).Value
             : LeaveDays.Create(6).Value;
 
