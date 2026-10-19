@@ -3473,6 +3473,86 @@ public class LeaveRequestTests
         Assert.That(request.Decisions[0].Id, Is.EqualTo(firstDecisionId));
     }
 
+    [TestCase(ApprovalStage.First)]
+    [TestCase(ApprovalStage.Final)]
+    public void Cancel_AfterOverrideApproval_PreservesOverrideOutcomeAndUsesItsStage(
+        ApprovalStage stage
+    )
+    {
+        // Arrange
+        var createResult = CreatePendingRequestForStage(stage);
+
+        Assert.That(createResult.IsSuccess, Is.True);
+
+        var request = createResult.Value;
+
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Pending));
+        Assert.That(request.Decisions, Has.Count.EqualTo(0));
+
+        if (stage is ApprovalStage.Final)
+        {
+            var approveFirstStageResult = request.ApproveFirstStage(
+                approverId: _approverId,
+                requiresFinalApproval: true,
+                reason: _validApprovalReason,
+                now: _firstApprovalAt
+            );
+
+            Assert.That(approveFirstStageResult.IsSuccess, Is.True);
+            Assert.That(request.Status, Is.EqualTo(LeaveStatus.PendingFinalApproval));
+            Assert.That(request.Decisions, Has.Count.EqualTo(1));
+        }
+
+        var overrideResult = request.Override(
+            actorId: _overrideActorId,
+            bypassedApproverId: _validBypassedId,
+            outcome: DecisionType.Approve,
+            reason: _validOverrideReason,
+            now: _overrideAt
+        );
+
+        Assert.That(overrideResult.IsSuccess, Is.True);
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Approved));
+
+        Assert.That(request.Decisions, Has.Count.EqualTo(
+            stage is ApprovalStage.First ? 1 : 2
+        ));
+
+        var overrideDecisionIndex = stage is ApprovalStage.First ? 0 : 1;
+        var originalOverrideDecisionId = request.Decisions[overrideDecisionIndex].Id;
+        var countBefore = request.Decisions.Count;
+
+        // Act
+        var result = request.Cancel(
+            actorId: request.EmployeeId,
+            today: new DateOnly(2026, 3, 15),
+            reason: _validCancellationReason,
+            now: _cancellationAt
+        );
+
+        // Assert
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(request.Status, Is.EqualTo(LeaveStatus.Cancelled));
+        Assert.That(request.Decisions, Has.Count.EqualTo(countBefore + 1));
+
+        var cancelDecision = request.Decisions[countBefore];
+        var originalOverrideDecision = request.Decisions[overrideDecisionIndex];
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsFailure, Is.False);
+            Assert.That(result.Error, Is.Empty);
+
+            Assert.That(cancelDecision.Type, Is.EqualTo(DecisionType.Cancel));
+            Assert.That(cancelDecision.Stage, Is.EqualTo(stage));
+
+            Assert.That(originalOverrideDecision.Id, Is.EqualTo(originalOverrideDecisionId));
+            Assert.That(originalOverrideDecision.Type, Is.EqualTo(DecisionType.Override));
+            Assert.That(originalOverrideDecision.Stage, Is.EqualTo(stage));
+            Assert.That(originalOverrideDecision.OverrideOutcome, Is.EqualTo(DecisionType.Approve));
+        });
+    }
+
     private sealed record DecisionSnapshot(
         Guid Id,
         LeaveRequestId LeaveRequestId,
