@@ -3,6 +3,9 @@ classDiagram
 
   %% Visibility: + public, - private, ~ internal; classifier: $ static
   %% Constructor parameters are validated initial state, not injected services.
+  %% Contract reference: PRD v1.3, sections 7.0-7.4, and TASKS W1-12.
+  %% Contract targets guide unfinished W1-12 code; planned types are not implemented yet.
+  %% Public data properties have no public setters; child collections expose read-only views.
 
   %% Aggregate roots
   class Employee {
@@ -56,6 +59,7 @@ classDiagram
 
   class LeaveRequest {
     <<aggregate root>>
+    <<contract target>>
     +LeaveRequestId Id
     +EmployeeId EmployeeId
     +DateRange Period
@@ -65,19 +69,25 @@ classDiagram
     +Reason Reason
     +LeaveStatus Status
     +IReadOnlyList~ApprovalDecision~ Decisions
+    -List~ApprovalDecision~ _decisions
     +DateTimeOffset SubmittedAt
     -LeaveRequest(id: LeaveRequestId, employeeId: EmployeeId, period: DateRange, workingDays: LeaveDays, allocation: LeaveAllocation, type: LeaveType, reason: Reason, submittedAt: DateTimeOffset)
-    +Create(employeeId: EmployeeId, period: DateRange, workingDays: LeaveDays, allocation: LeaveAllocation, type: LeaveType, reason: Reason, submittedAt: DateTimeOffset) Result~LeaveRequest~$
-    +ApproveFirstStage(approverId: EmployeeId, now: DateTimeOffset) Result
-    +ApproveFinalStage(approverId: EmployeeId, now: DateTimeOffset) Result
-    +Override(actorId: EmployeeId, bypassedApproverId: EmployeeId?, reason: Reason, now: DateTimeOffset) Result
-    +Reject(actorId: EmployeeId, reason: Reason, now: DateTimeOffset) Result
-    +Cancel(actorId: EmployeeId, today: DateOnly, now: DateTimeOffset) Result
+    +Create(employeeId: EmployeeId, period: DateRange, workingDays: LeaveDays, allocation: LeaveAllocation, type: LeaveType, reason: Reason, today: DateOnly, submittedAt: DateTimeOffset) Result~LeaveRequest~$
+    +ApproveFirstStage(approverId: EmployeeId, requiresFinalApproval: bool, reason: Reason?, now: DateTimeOffset) Result
+    +ApproveFinalStage(approverId: EmployeeId, reason: Reason?, now: DateTimeOffset) Result
+    +Override(actorId: EmployeeId, bypassedApproverId: EmployeeId?, outcome: DecisionType, reason: Reason?, now: DateTimeOffset) Result
+    +Reject(actorId: EmployeeId, reason: Reason?, now: DateTimeOffset) Result
+    +Cancel(actorId: EmployeeId, today: DateOnly, reason: Reason?, now: DateTimeOffset) Result
   }
+
+  %% today validates the request year in Create; it is not stored or passed to the constructor.
+  %% Status starts Pending and Decisions starts empty; neither is caller-supplied initial state.
+  %% requiresFinalApproval is supplied by Application; PendingFinalApproval preserves the route.
 
   %% Reference aggregates
   class Position {
     <<reference aggregate>>
+    <<planned>>
     +PositionId Id
     +string Name
     +bool IsActive
@@ -89,6 +99,7 @@ classDiagram
 
   class Holiday {
     <<reference aggregate>>
+    <<planned>>
     +Guid Id
     +DateOnly Date
     +string Name
@@ -102,6 +113,7 @@ classDiagram
 
   class ApprovalDecision {
     <<entity>>
+    <<contract target>>
     +Guid Id
     +LeaveRequestId LeaveRequestId
     +EmployeeId ActorId
@@ -109,9 +121,10 @@ classDiagram
     +ApprovalStage Stage
     +Reason? Reason
     +EmployeeId? BypassedApproverId
+    +DecisionType? OverrideOutcome
     +DateTimeOffset DecidedAt
-    -ApprovalDecision(id: Guid, requestId: LeaveRequestId, actorId: EmployeeId, type: DecisionType, stage: ApprovalStage, reason: Reason?, bypassedApproverId: EmployeeId?, decidedAt: DateTimeOffset)
-    +Create(requestId: LeaveRequestId, actorId: EmployeeId, type: DecisionType, stage: ApprovalStage, reason: Reason?, bypassedApproverId: EmployeeId?, decidedAt: DateTimeOffset) Result~ApprovalDecision~$
+    -ApprovalDecision(id: Guid, requestId: LeaveRequestId, actorId: EmployeeId, type: DecisionType, stage: ApprovalStage, reason: Reason?, bypassedApproverId: EmployeeId?, overrideOutcome: DecisionType?, decidedAt: DateTimeOffset)
+    +Create(requestId: LeaveRequestId, actorId: EmployeeId, type: DecisionType, stage: ApprovalStage, reason: Reason?, bypassedApproverId: EmployeeId?, overrideOutcome: DecisionType?, decidedAt: DateTimeOffset) Result~ApprovalDecision~$
   }
 
   class QuotaAdjustment {
@@ -122,13 +135,14 @@ classDiagram
     +Reason Reason
     +EmployeeId AdjustedBy
     +DateTimeOffset AdjustedAt
-    -QuotaAdjustment(id: Guid, balanceId: LeaveBalanceId, days: int, reason: Reason, adjustedBy: EmployeeId, adjustedAt: DateTimeOffset)
-    +Create(balanceId: LeaveBalanceId, days: int, reason: Reason?, adjustedBy: EmployeeId, adjustedAt: DateTimeOffset) Result~QuotaAdjustment~$
+    -QuotaAdjustment(id: Guid, leaveBalanceId: LeaveBalanceId, days: int, reason: Reason, adjustedBy: EmployeeId, adjustedAt: DateTimeOffset)
+    +Create(leaveBalanceId: LeaveBalanceId, days: int, reason: Reason?, adjustedBy: EmployeeId, adjustedAt: DateTimeOffset) Result~QuotaAdjustment~$
   }
 
   %% Operational records
   class AuditEntry {
     <<operational record>>
+    <<planned>>
     +Guid Id
     +string EntityType
     +string EntityId
@@ -143,6 +157,7 @@ classDiagram
 
   class JobExecutionMarker {
     <<operational record>>
+    <<planned>>
     +Guid Id
     +string JobName
     +string PeriodKey
@@ -281,6 +296,7 @@ classDiagram
 
   class HolidaySource {
     <<enumeration>>
+    <<planned>>
     Manual
     Imported
   }
@@ -318,6 +334,7 @@ classDiagram
   Employee ..> SystemRole : uses
   LeaveRequest ..> LeaveStatus : uses
   LeaveRequest ..> LeaveType : uses
+  LeaveRequest ..> DecisionType : override outcome
   ApprovalDecision ..> DecisionType : uses
   ApprovalDecision ..> ApprovalStage : uses
   Holiday ..> HolidaySource : uses

@@ -1,5 +1,6 @@
 @startuml Use Case Diagram
 title Leave Management System - Use Case Diagram
+' Target use cases: PRD v1.3, BR-14/BR-14a, BR-19 and BR-20.
 
 left to right direction
 
@@ -10,9 +11,11 @@ skinparam actorStyle awesome
 actor Employee as Employee
 actor SuperEmployee as SuperEmployee
 actor Administrator as Administrator
+actor "Configured Fallback\nApprover" as FallbackApprover <<assignment>>
 
 SuperEmployee --|> Employee
 Administrator --|> SuperEmployee
+FallbackApprover --|> Employee
 
 rectangle "Leave Management System" {
   package "Account" {
@@ -30,6 +33,8 @@ rectangle "Leave Management System" {
   package "Team Approval" {
     usecase "View Pending Requests\nfrom Direct Reports" as UC_ViewPending
     usecase "Approve or Reject\nDirect Report Request" as UC_DecideRequest
+    usecase "Approve or Reject\nRequest Without Manager" as UC_NoManagerDecision
+    usecase "Approve or Reject\nFinal-Stage Request" as UC_FinalDecision
     usecase "View Team Leave Calendar" as UC_ViewTeamCalendar
   }
 
@@ -41,7 +46,6 @@ rectangle "Leave Management System" {
     usecase "Adjust Employee Leave Balance" as UC_AdjustBalance
     usecase "Manage Holidays" as UC_ManageHolidays
     usecase "Manage Positions" as UC_ManagePositions
-    usecase "Approve or Reject\nFinal-Stage Request" as UC_FinalDecision
     usecase "Override Approval Decision" as UC_OverrideDecision
   }
 }
@@ -64,29 +68,61 @@ Administrator --> UC_ResetPassword
 Administrator --> UC_AdjustBalance
 Administrator --> UC_ManageHolidays
 Administrator --> UC_ManagePositions
+Administrator --> UC_NoManagerDecision
 Administrator --> UC_FinalDecision
 Administrator --> UC_OverrideDecision
 
+FallbackApprover --> UC_NoManagerDecision
+FallbackApprover --> UC_FinalDecision
+
 note right of UC_DecideRequest
-  Only the direct manager may decide.
+  For requests with a manager,
+  only the active direct manager may decide.
+  This also applies when the requester
+  or the manager is an Administrator.
   A requester may never decide
   their own request.
 end note
 
+note right of UC_NoManagerDecision
+  Active Administrator other than the requester;
+  if none exists, use the valid configured fallback.
+  Approval completes in one stage,
+  including requests longer than 5 working days.
+end note
+
 note right of UC_OverrideDecision
-  A reason is required.
+  Administrator only, while Pending
+  or PendingFinalApproval.
+  Reason: at least 10 characters.
+  Decision Type: Override; outcome: Approve or Reject.
+  Record outcome, stage and bypassed candidate context.
   A requester may never override
   their own request.
 end note
 
 note right of UC_FinalDecision
   Applies to requests requiring final approval.
+  Active Administrator other than the requester;
+  if none exists, use the valid configured fallback.
+  The first-stage approver may also decide the final stage.
   A requester may never decide
   their own request.
 end note
 
+note bottom of FallbackApprover
+  Assignment, not a new SystemRole.
+  Must be active, configured and not the requester.
+  May have the Employee role.
+  Authority is limited to the eligible request and stage;
+  it does not grant administrative or override permissions.
+end note
+
 note bottom of Administrator
   Permissions are cumulative through actor generalization.
+  Access remains scoped to the resource and current hierarchy.
+  Administrator status alone does not allow ordinary
+  first-stage decisions for another manager's direct reports.
 end note
 
 @enduml
