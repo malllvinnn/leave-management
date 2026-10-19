@@ -432,8 +432,8 @@ public class LeaveRequestCancelTests : LeaveRequestTestBase
             Assert.That(decision.LeaveRequestId, Is.EqualTo(request.Id));
             Assert.That(decision.ActorId, Is.EqualTo(request.EmployeeId));
             Assert.That(decision.Reason, Is.EqualTo(_validCancellationReason));
-            Assert.That(decision.BypassedApproverId, Is.EqualTo(null));
-            Assert.That(decision.OverrideOutcome, Is.EqualTo(null));
+            Assert.That(decision.BypassedApproverId, Is.Null);
+            Assert.That(decision.OverrideOutcome, Is.Null);
             Assert.That(decision.DecidedAt, Is.EqualTo(_cancellationAt.ToUniversalTime()));
             Assert.That(decision.DecidedAt.Offset, Is.EqualTo(TimeSpan.Zero));
         });

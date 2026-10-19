@@ -479,8 +479,8 @@ public class LeaveRequestApproveFinalStageTests : LeaveRequestTestBase
             Assert.That(decision.LeaveRequestId, Is.EqualTo(request.Id));
             Assert.That(decision.ActorId, Is.EqualTo(finalActorId));
             Assert.That(decision.Reason, Is.EqualTo(_validApprovalFinalReason));
-            Assert.That(decision.BypassedApproverId, Is.EqualTo(null));
-            Assert.That(decision.OverrideOutcome, Is.EqualTo(null));
+            Assert.That(decision.BypassedApproverId, Is.Null);
+            Assert.That(decision.OverrideOutcome, Is.Null);
             Assert.That(decision.DecidedAt, Is.EqualTo(_finalApprovalAt.ToUniversalTime()));
             Assert.That(decision.DecidedAt.Offset, Is.EqualTo(TimeSpan.Zero));
         });

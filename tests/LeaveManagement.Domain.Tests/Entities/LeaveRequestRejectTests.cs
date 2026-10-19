@@ -440,8 +440,8 @@ public class LeaveRequestRejectTests : LeaveRequestTestBase
             Assert.That(decision.LeaveRequestId, Is.EqualTo(request.Id));
             Assert.That(decision.ActorId, Is.EqualTo(_actorReject));
             Assert.That(decision.Reason, Is.EqualTo(_validRejectionReason));
-            Assert.That(decision.BypassedApproverId, Is.EqualTo(null));
-            Assert.That(decision.OverrideOutcome, Is.EqualTo(null));
+            Assert.That(decision.BypassedApproverId, Is.Null);
+            Assert.That(decision.OverrideOutcome, Is.Null);
             Assert.That(decision.DecidedAt, Is.EqualTo(_rejectionAt.ToUniversalTime()));
             Assert.That(decision.DecidedAt.Offset, Is.EqualTo(TimeSpan.Zero));
         });

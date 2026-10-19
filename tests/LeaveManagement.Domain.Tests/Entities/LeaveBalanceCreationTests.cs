@@ -43,7 +43,7 @@ public class LeaveBalanceCreationTests : LeaveBalanceTestBase
             Assert.That(result.Value.AnnualReserved, Is.EqualTo(LeaveDays.Zero));
             Assert.That(result.Value.CarryOverUsed, Is.EqualTo(LeaveDays.Zero));
             Assert.That(result.Value.CarryOverReserved, Is.EqualTo(LeaveDays.Zero));
-            Assert.That(result.Value.Adjustments, Is.Empty);
+            Assert.That(result.Value.Adjustments, Has.Count.EqualTo(0));
         });
     }
 
