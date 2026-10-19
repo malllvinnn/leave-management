@@ -3,7 +3,6 @@ using LeaveManagement.Domain.ValueObjects;
 
 namespace LeaveManagement.Domain.Tests.Entities;
 
-[TestFixture]
 public abstract class LeaveBalanceTestBase
 {
     protected EmployeeId _employeeId;
