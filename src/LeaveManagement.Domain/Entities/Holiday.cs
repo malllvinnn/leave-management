@@ -29,6 +29,31 @@ public class Holiday
         HolidaySource source
     )
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            var failureResult = Result<Holiday>.Fail("Holiday name cannot be empty");
+
+            return failureResult;
+        }
+
+        var normalizedName = name.Trim();
+
+        if (normalizedName.Length > 150)
+        {
+            var failureResult = Result<Holiday>.Fail("Holiday name cannot exceed 150 characters");
+
+            return failureResult;
+        }
+
+        var holiday = new Holiday(
+            id: Guid.NewGuid(),
+            date: date,
+            name: normalizedName,
+            source: source
+        );
+
+        var successResult = Result<Holiday>.Ok(holiday);
+
+        return successResult;
     }
 }
