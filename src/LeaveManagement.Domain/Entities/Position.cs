@@ -21,6 +21,29 @@ public class Position
 
     public static Result<Position> Create(string? name)
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            var failureResult = Result<Position>.Fail("Position name cannot be empty");
+
+            return failureResult;
+        }
+
+        var normalizedName = name.Trim();
+
+        if (normalizedName.Length > 150)
+        {
+            var failureResult = Result<Position>.Fail("Position name cannot exceed 150 characters");
+
+            return failureResult;
+        }
+
+        var position = new Position(
+            id: PositionId.New(),
+            name: normalizedName
+        );
+
+        var successResult = Result<Position>.Ok(position);
+
+        return successResult;
     }
 }
