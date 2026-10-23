@@ -5,7 +5,6 @@ using LeaveManagement.Domain.ValueObjects;
 namespace LeaveManagement.Domain.Tests.Entities;
 
 [TestFixture]
-[TestFixture]
 public class EmployeeCreateTests : EmployeeTestBase
 {
 
