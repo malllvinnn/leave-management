@@ -45,6 +45,82 @@ public class AuditEntry
         DateTimeOffset occurredAt
     )
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrWhiteSpace(entityType))
+        {
+            var failureResult = Result<AuditEntry>.Fail("Entity type cannot be empty");
+
+            return failureResult;
+        }
+
+        if (string.IsNullOrWhiteSpace(entityId))
+        {
+            var failureResult = Result<AuditEntry>.Fail("Entity id cannot be empty");
+
+            return failureResult;
+        }
+
+        if (string.IsNullOrWhiteSpace(action))
+        {
+            var failureResult = Result<AuditEntry>.Fail("Action cannot be empty");
+
+            return failureResult;
+        }
+
+        if (string.IsNullOrWhiteSpace(payload))
+        {
+            var failureResult = Result<AuditEntry>.Fail("Payload cannot be empty");
+
+            return failureResult;
+        }
+
+        var normalizedActorSnapshot = actorSnapshot?.Trim();
+        var normalizedEntityType = entityType.Trim();
+        var normalizedEntityId = entityId.Trim();
+        var normalizedAction = action.Trim();
+
+        if (normalizedEntityType.Length > 100)
+        {
+            var failureResult = Result<AuditEntry>.Fail("Entity type cannot exceed 100 characters");
+
+            return failureResult;
+        }
+
+        if (normalizedEntityId.Length > 100)
+        {
+            var failureResult = Result<AuditEntry>.Fail("Entity id cannot exceed 100 characters");
+
+            return failureResult;
+        }
+
+        if (normalizedAction.Length > 100)
+        {
+            var failureResult = Result<AuditEntry>.Fail("Action cannot exceed 100 characters");
+
+            return failureResult;
+        }
+
+        if (normalizedActorSnapshot is not null && normalizedActorSnapshot.Length > 300)
+        {
+            var failureResult = Result<AuditEntry>.Fail("Actor snapshot cannot exceed 300 characters");
+
+            return failureResult;
+        }
+
+        var utcOccurredAt = occurredAt.ToUniversalTime();
+
+        var auditEntry = new AuditEntry(
+            id: Guid.NewGuid(),
+            entityType: normalizedEntityType,
+            entityId: normalizedEntityId,
+            action: normalizedAction,
+            actorId: actorId,
+            actorSnapshot: normalizedActorSnapshot,
+            payload: payload,
+            occurredAt: utcOccurredAt
+        );
+
+        var successResult = Result<AuditEntry>.Ok(auditEntry);
+
+        return successResult;
     }
 }
