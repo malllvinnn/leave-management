@@ -3,8 +3,7 @@ classDiagram
 
   %% Visibility: + public, - private, ~ internal; classifier: $ static
   %% Constructor parameters are validated initial state, not injected services.
-  %% Contract reference: PRD v1.3, sections 7.0-7.4, and TASKS W1-12.
-  %% Contract targets guide unfinished W1-12 code; planned types are not implemented yet.
+  %% Reflects the implemented Domain layer as of W1-13.
   %% Public data properties have no public setters; child collections expose read-only views.
 
   %% Aggregate roots
@@ -59,7 +58,6 @@ classDiagram
 
   class LeaveRequest {
     <<aggregate root>>
-    <<contract target>>
     +LeaveRequestId Id
     +EmployeeId EmployeeId
     +DateRange Period
@@ -87,33 +85,27 @@ classDiagram
   %% Reference aggregates
   class Position {
     <<reference aggregate>>
-    <<planned>>
     +PositionId Id
     +string Name
     +bool IsActive
     -Position(id: PositionId, name: string)
     +Create(name: string) Result~Position~$
-    +Rename(name: string) Result
-    +Deactivate() Result
   }
 
   class Holiday {
     <<reference aggregate>>
-    <<planned>>
     +Guid Id
     +DateOnly Date
     +string Name
     +HolidaySource Source
     -Holiday(id: Guid, date: DateOnly, name: string, source: HolidaySource)
     +Create(date: DateOnly, name: string, source: HolidaySource) Result~Holiday~$
-    +Rename(name: string) Result
   }
 
   %% Child entities
 
   class ApprovalDecision {
     <<entity>>
-    <<contract target>>
     +Guid Id
     +LeaveRequestId LeaveRequestId
     +EmployeeId ActorId
@@ -142,7 +134,6 @@ classDiagram
   %% Operational records
   class AuditEntry {
     <<operational record>>
-    <<planned>>
     +Guid Id
     +string EntityType
     +string EntityId
@@ -157,7 +148,6 @@ classDiagram
 
   class JobExecutionMarker {
     <<operational record>>
-    <<planned>>
     +Guid Id
     +string JobName
     +string PeriodKey
@@ -296,7 +286,6 @@ classDiagram
 
   class HolidaySource {
     <<enumeration>>
-    <<planned>>
     Manual
     Imported
   }
