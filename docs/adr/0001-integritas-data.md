@@ -22,6 +22,10 @@ We enforce integrity in both layers.
 
 Unique rules are unique indexes: `lower(email)` on employees, `lower(name)` on positions, `(employee_id, year)` on leave balances, `(job_name, period_key)` on job execution markers, `(employee_id, operation, idempotency_key)` on idempotency records while the record is active, and `date` on holidays.
 
+The case-insensitive indexes cannot be declared in the EF model, because the model has no way to express an index over an expression. They are written as raw SQL in the initial migration instead, and no plain unique index is declared on `email` or `name` as a substitute: a second index would enforce a different rule and cost every insert.
+
+A partial index predicate must be immutable, so "active" is expressed with a column (`completed_at IS NULL`), not with `now()` or `expires_at`.
+
 Balance rules are `CHECK` constraints on the stored counters: annual quota, carried over, annual used, annual reserved, carry-over used, and carry-over reserved are never negative.
 
 Overlap is enforced by an exclusion constraint combining the employee with the request date range, restricted to the statuses that still occupy the calendar: `Pending`, `PendingFinalApproval`, and `Approved`.
@@ -49,11 +53,11 @@ The `PR-nn` labels are only rule numbers for cross-reference; each row states th
 
 | Rule                                                                | Enforced by                                                  | Where                                |
 | ------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------ |
-| PR-01 employees.email unique, case-insensitive                      | unique index on `lower(email)`                               | EF configuration, initial migration  |
-| PR-02 positions.name unique, case-insensitive                       | unique index on `lower(name)`                                | EF configuration, initial migration  |
+| PR-01 employees.email unique, case-insensitive                      | unique index on `lower(email)`                               | initial migration, raw SQL           |
+| PR-02 positions.name unique, case-insensitive                       | unique index on `lower(name)`                                | initial migration, raw SQL           |
 | PR-03 (employee_id, year) unique                                    | unique index                                                 | EF configuration, initial migration  |
 | PR-04 (job_name, period_key) unique                                 | unique index                                                 | EF configuration, initial migration  |
-| PR-05 (employee_id, operation, idempotency_key) unique while active | partial unique index                                         | EF configuration, initial migration  |
+| PR-05 (employee_id, operation, idempotency_key) unique while active | partial unique index, `WHERE completed_at IS NULL`           | EF configuration, initial migration  |
 | PR-06 holidays.date unique                                          | unique index                                                 | EF configuration, initial migration  |
 | PR-07 balances never negative                                       | six `CHECK` constraints                                      | EF configuration, initial migration  |
 | PR-08 manager chain has no cycle                                    | database trigger and `HierarchyValidator`                    | initial migration, application layer |
@@ -61,5 +65,5 @@ The `PR-nn` labels are only rule numbers for cross-reference; each row states th
 | PR-10 decisions and audit are append-only                           | trigger on `UPDATE` and `DELETE`                             | initial migration                    |
 | PR-11 timestamps stored in UTC                                      | `timestamptz` and a clock adapter that returns a zero offset | EF configuration, infrastructure     |
 | PR-12 refresh token jti unique, revoked tokens unusable             | unique index and rotation logic                              | identity schema, token service       |
-| PR-13 one application user per employee                             | unique index on `application_user_id`                        | identity schema                      |
+| PR-13 one application user per employee                             | unique index on `employee_id`                                | identity schema                      |
 | PR-14 concurrent updates are detected                               | `xmin` concurrency token                                     | see ADR-0002                         |
