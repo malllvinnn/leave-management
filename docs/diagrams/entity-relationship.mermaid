@@ -1,8 +1,10 @@
-%% Target structural ERD (PRD v1.3 and TASKS W1-12/W2-01).
+%% Target structural ERD (PRD v1.3).
 %% This models the planned schema, not an existing migration or deployed database.
 %% Defines tables, columns, and foreign-key relationships only.
-%% Detailed indexes and ON DELETE behavior are finalized in W2-01.
-%% Date-overlap enforcement and performance indexes are not final.
+%% Foreign keys use ON DELETE RESTRICT; nothing cascades into approval_decisions or audit_entries.
+%% approval_decisions and audit_entries are append-only; UPDATE and DELETE are rejected by trigger.
+%% Date overlap applies only to statuses Pending, PendingFinalApproval, and Approved.
+%% Performance indexes are decided from query plans, not drawn here.
 %% PostgreSQL xmin is a system column used as an optimistic concurrency token.
 %% LeaveRequest.Create receives today for validation only; it is not a persisted column.
 %% Override requires an Approve/Reject outcome; other decision types require NULL outcome.
