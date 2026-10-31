@@ -1,4 +1,4 @@
-namespace LeaveManagement.Infrastructure.Idempotency;
+namespace LeaveManagement.Infrastructure.Persistence.Models;
 
 public enum IdempotencyStatus
 {

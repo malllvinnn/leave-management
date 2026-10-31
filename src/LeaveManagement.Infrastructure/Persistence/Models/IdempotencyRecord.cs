@@ -1,6 +1,6 @@
 using LeaveManagement.Domain.ValueObjects;
 
-namespace LeaveManagement.Infrastructure.Idempotency;
+namespace LeaveManagement.Infrastructure.Persistence.Models;
 
 public class IdempotencyRecord
 {

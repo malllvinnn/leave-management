@@ -1,4 +1,4 @@
-namespace LeaveManagement.Infrastructure.Identity;
+namespace LeaveManagement.Infrastructure.Persistence.Models;
 
 public class RefreshToken
 {
