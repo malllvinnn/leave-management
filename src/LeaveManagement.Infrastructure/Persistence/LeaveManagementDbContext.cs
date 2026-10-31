@@ -1,4 +1,4 @@
-using LeaveManagement.Infrastructure.Identity;
+using LeaveManagement.Infrastructure.Persistence.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
