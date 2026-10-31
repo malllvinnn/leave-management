@@ -15,4 +15,14 @@ public class LeaveManagementDbContext : IdentityDbContext<ApplicationUser, Ident
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(LeaveManagementDbContext).Assembly);
     }
+
+    public static DbContextOptions<LeaveManagementDbContext> CreateOptions(string connectionString)
+    {
+        var optionsBuilder = new DbContextOptionsBuilder<LeaveManagementDbContext>()
+            .UseNpgsql(connectionString)
+            .UseSnakeCaseNamingConvention()
+            .Options;
+
+        return optionsBuilder;
+    }
 }
