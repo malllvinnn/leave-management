@@ -5,9 +5,11 @@ namespace LeaveManagement.Domain.Entities;
 public class JobExecutionMarker
 {
     public Guid Id { get; private set; }
-    public string JobName { get; private set; }
-    public string PeriodKey { get; private set; }
+    public string JobName { get; private set; } = string.Empty;
+    public string PeriodKey { get; private set; } = string.Empty;
     public DateTimeOffset ExecutedAt { get; private set; }
+
+    private JobExecutionMarker() { } // Required by ORM or for deserialization purposes
 
     private JobExecutionMarker(
         Guid id,

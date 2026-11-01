@@ -26,6 +26,8 @@ public class LeaveBalance
 
     private readonly List<QuotaAdjustment> _adjustments = [];
 
+    private LeaveBalance() { } // Required by ORM or for deserialization purposes
+
     private LeaveBalance(
         LeaveBalanceId id,
         EmployeeId employeeId,

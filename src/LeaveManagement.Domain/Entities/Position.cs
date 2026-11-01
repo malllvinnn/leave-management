@@ -6,8 +6,10 @@ namespace LeaveManagement.Domain.Entities;
 public class Position
 {
     public PositionId Id { get; private set; }
-    public string Name { get; private set; }
+    public string Name { get; private set; } = string.Empty;
     public bool IsActive { get; private set; }
+
+    private Position() { } // Required by ORM or for deserialization purposes
 
     private Position(
         PositionId id,

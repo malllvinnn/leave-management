@@ -8,13 +8,23 @@ public class LeaveRequest
 {
     public LeaveRequestId Id { get; private set; }
     public EmployeeId EmployeeId { get; private set; }
-    public DateRange Period { get; private set; }
     public LeaveDays WorkingDays { get; private set; }
     public LeaveAllocation Allocation { get; private set; }
     public LeaveType Type { get; private set; }
-    public Reason Reason { get; private set; }
     public LeaveStatus Status { get; private set; }
     public DateTimeOffset SubmittedAt { get; private set; }
+
+    public DateRange Period
+    {
+        get => field ?? throw new InvalidOperationException($"Uninitialized {nameof(Period)}");
+        private set => field = value;
+    }
+
+    public Reason Reason
+    {
+        get => field ?? throw new InvalidOperationException($"Uninitialized {nameof(Reason)}");
+        private set => field = value;
+    }
 
     public IReadOnlyList<ApprovalDecision> Decisions
     {
@@ -25,6 +35,8 @@ public class LeaveRequest
     }
 
     private readonly List<ApprovalDecision> _decisions = [];
+
+    private LeaveRequest() { } // Required by ORM or for deserialization purposes
 
     private LeaveRequest(
         LeaveRequestId id,

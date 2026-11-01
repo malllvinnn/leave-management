@@ -16,6 +16,8 @@ public class ApprovalDecision
     public DecisionType? OverrideOutcome { get; private set; }
     public DateTimeOffset DecidedAt { get; private set; }
 
+    private ApprovalDecision() { } // Required by ORM or for deserialization purposes
+
     private ApprovalDecision(
         Guid id,
         LeaveRequestId requestId,

@@ -6,13 +6,15 @@ namespace LeaveManagement.Domain.Entities;
 public class AuditEntry
 {
     public Guid Id { get; private set; }
-    public string EntityType { get; private set; }
-    public string EntityId { get; private set; }
-    public string Action { get; private set; }
+    public string EntityType { get; private set; } = string.Empty;
+    public string EntityId { get; private set; } = string.Empty;
+    public string Action { get; private set; } = string.Empty;
     public EmployeeId? ActorId { get; private set; }
     public string? ActorSnapshot { get; private set; }
-    public string Payload { get; private set; }
+    public string Payload { get; private set; } = string.Empty;
     public DateTimeOffset OccurredAt { get; private set; }
+
+    private AuditEntry() { } // Required by ORM or for deserialization purposes
 
     private AuditEntry(
         Guid id,
