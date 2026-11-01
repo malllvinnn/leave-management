@@ -16,7 +16,7 @@ public sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Appl
             .IsUnique()
             .HasDatabaseName("ux_aspnetusers_employee_id");
 
-        builder.HasOne<Employee>()
+        builder.HasOne((applicationUser) => applicationUser.Employee)
             .WithOne()
             .HasForeignKey<ApplicationUser>((applicationUser) => applicationUser.EmployeeId)
             .IsRequired()

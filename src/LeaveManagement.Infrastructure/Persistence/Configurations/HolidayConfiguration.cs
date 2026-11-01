@@ -10,7 +10,10 @@ public sealed class HolidayConfiguration : IEntityTypeConfiguration<Holiday>
     {
         builder.ToTable("holidays");
 
-        builder.HasIndex((holiday) => holiday.Date).IsUnique();
         builder.Property((holiday) => holiday.Name).HasMaxLength(150);
+
+        builder.HasIndex((holiday) => holiday.Date)
+            .IsUnique()
+            .HasDatabaseName("ux_holidays_date");
     }
 }

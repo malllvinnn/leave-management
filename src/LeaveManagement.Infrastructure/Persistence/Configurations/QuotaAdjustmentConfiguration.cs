@@ -15,11 +15,6 @@ public sealed class QuotaAdjustmentConfiguration : IEntityTypeConfiguration<Quot
         builder.Property((quotaAdjustment) => quotaAdjustment.AdjustedBy).HasConversion<EmployeeIdConverter>().HasColumnName("adjusted_by_id");
         builder.Property((quotaAdjustment) => quotaAdjustment.Reason).HasConversion<ReasonConverter>().HasMaxLength(500);
 
-        builder.HasOne<LeaveBalance>()
-            .WithMany()
-            .HasForeignKey((quotaAdjustment) => quotaAdjustment.LeaveBalanceId)
-            .OnDelete(DeleteBehavior.Restrict);
-
         builder.HasOne<Employee>()
             .WithMany()
             .HasForeignKey((quotaAdjustment) => quotaAdjustment.AdjustedBy)
