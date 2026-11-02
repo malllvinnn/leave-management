@@ -7,8 +7,10 @@ public class Holiday
 {
     public Guid Id { get; private set; }
     public DateOnly Date { get; private set; }
-    public string Name { get; private set; }
+    public string Name { get; private set; } = string.Empty;
     public HolidaySource Source { get; private set; }
+
+    private Holiday() { } // Required by ORM or for deserialization purposes
 
     private Holiday(
         Guid id,

@@ -7,14 +7,21 @@ namespace LeaveManagement.Domain.Entities;
 public class Employee
 {
     public EmployeeId Id { get; private set; }
-    public string FullName { get; private set; }
-    public Email Email { get; private set; }
+    public string FullName { get; private set; } = string.Empty;
     public DateOnly HireDate { get; private set; }
     public EmployeeId? ManagerId { get; private set; }
     public PositionId? PositionId { get; private set; }
     public DateTimeOffset? AdminGrantedAt { get; private set; }
     public SystemRole Role { get; private set; }
     public bool IsActive { get; private set; }
+
+    public Email Email
+    {
+        get => field ?? throw new InvalidOperationException($"Uninitialized {nameof(Email)}");
+        private set => field = value;
+    }
+
+    private Employee() { } // Required by ORM or for deserialization purposes
 
     private Employee(
         EmployeeId id,

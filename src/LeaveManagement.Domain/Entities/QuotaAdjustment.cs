@@ -8,9 +8,16 @@ public class QuotaAdjustment
     public Guid Id { get; private set; }
     public LeaveBalanceId LeaveBalanceId { get; private set; }
     public int Days { get; private set; }
-    public Reason Reason { get; private set; }
     public EmployeeId AdjustedBy { get; private set; }
     public DateTimeOffset AdjustedAt { get; private set; }
+
+    public Reason Reason
+    {
+        get => field ?? throw new InvalidOperationException($"Uninitialized {nameof(Reason)}");
+        private set => field = value;
+    }
+
+    private QuotaAdjustment() { } // Required by ORM or for deserialization purposes
 
     private QuotaAdjustment(
         Guid id,
